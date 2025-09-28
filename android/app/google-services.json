@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "360842823989",
+    "project_id": "qadam-payk",
+    "storage_bucket": "qadam-payk.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:360842823989:android:49d0225a4ffc10ca37647c",
+        "android_client_info": {
+          "package_name": "com.qadam_payk"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB5mOd3dLTCvZVHMyLCfC_7PcYQ0rMV1MU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
