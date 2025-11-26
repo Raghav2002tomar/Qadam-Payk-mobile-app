@@ -137,7 +137,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ],
                 ),
                 const SizedBox(height: 20),
-                _buildPriceRow(context, t('subtotal'), '\$${cart.totalAmount.toStringAsFixed(2)}', cs, tt),
+                _buildPriceRow(context, t('subtotal'), 'c ${cart.totalAmount.toStringAsFixed(2)}', cs, tt),
                 _buildPriceRow(context, t('delivery'), t('free').toUpperCase(), cs, tt, isGreen: true),
                 _buildPriceRow(context, t('service_fee'), t('free').toUpperCase(), cs, tt, isGreen: true),
                 const SizedBox(height: 12),
@@ -154,7 +154,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
                     ),
                     Text(
-                      '\$${cart.totalAmount.toStringAsFixed(2)}',
+                      'c ${cart.totalAmount.toStringAsFixed(2)}',
                       style: tt.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: cs.primary,
@@ -526,7 +526,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
                 ),
                 Text(
-                  '\$${cart.totalAmount.toStringAsFixed(2)}',
+                  'c ${cart.totalAmount.toStringAsFixed(2)}',
                   style: tt.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: cs.onSurface,

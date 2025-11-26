@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
+import '../../../providers/translate_provider.dart';
 import '../../../service/colors.dart';
-import '../create /OrderDetailScreen.dart';
+import '../create/OrderDetailScreen.dart';
 import '../mytrip/PassengerOrderDetailScreen.dart';
 import 'controller/RideListController.dart';
 import 'model/ride_model.dart';
@@ -74,7 +75,7 @@ class _RideListScreenState extends State<RideListScreen>
     final unselectedColor = cs.surfaceVariant.withOpacity(0.40);
 
     return AppBar(
-      title: const Text('Ride List'),
+      title: Text(context.watch<TranslateProvider>().t('txt_ride_list')),
       centerTitle: true,
       elevation: 0,
       backgroundColor: Colors.transparent,
@@ -100,7 +101,7 @@ class _RideListScreenState extends State<RideListScreen>
               unselectedLabelColor: Colors.grey,
               labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
               unselectedLabelStyle: const TextStyle(fontSize: 14),
-              tabs: const [Tab(text: 'Trips'), Tab(text: 'Passengers')],
+              tabs: [Tab(text: context.watch<TranslateProvider>().t('txt_ride_trips')), Tab(text: context.watch<TranslateProvider>().t('txt_ride_passengers'))],
               onTap: (index) => setState(() => _tabController.index = index),
             ),
           ),
@@ -118,7 +119,7 @@ class _RideListScreenState extends State<RideListScreen>
         }
 
         if (provider.tripList.isEmpty) {
-          return _buildEmptyState("No trips available", Icons.directions_car_outlined);
+          return _buildEmptyState(context.watch<TranslateProvider>().t('txt_no_trips_available'), Icons.directions_car_outlined);
         }
 
         return ListView.builder(
@@ -159,7 +160,7 @@ class _RideListScreenState extends State<RideListScreen>
         }
 
         if (provider.rideRequestList.isEmpty) {
-          return _buildEmptyState("No passenger requests", Icons.person_outline);
+          return _buildEmptyState(context.watch<TranslateProvider>().t('txt_no_passenger_request'), Icons.person_outline);
         }
 
         return ListView.builder(
@@ -206,7 +207,7 @@ class _RideListScreenState extends State<RideListScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            "Try adjusting your search criteria",
+            context.watch<TranslateProvider>().t('txt_trying_adjust_search'),
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey.shade500,
@@ -307,10 +308,33 @@ class PassengerRequestCard extends StatelessWidget {
                 // User Info
                 Row(
                   children: [
-                    CircleAvatar(
-                      radius: 25,
-                      backgroundImage: NetworkImage(imageUrl),
+                    SizedBox(
+                      width: 55, // slightly bigger to allow space for the badge
+                      height: 55,
+                      child: Stack(
+                        clipBehavior: Clip.none, // 👈 important so badge is not clipped
+                        children: [
+                          // Main profile image
+                          CircleAvatar(
+                            radius: 25,
+                            backgroundImage: NetworkImage(imageUrl),
+                          ),
+
+                          // Verify badge (only if verified)
+                          if (request.idVerified.toString() == "1")
+                            Positioned(
+                              bottom: -2,  // closer to the border
+                              right: -10,
+                              child: Image.asset(
+                                "assets/images/verify_user.png",
+                                height: 30,  // balanced size for radius 25
+                                width: 30,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
+
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -322,7 +346,7 @@ class PassengerRequestCard extends StatelessWidget {
                           ),
                           // const SizedBox(height: 4),
                           Text(
-                            "Age: ${_calculateAge(request.dob ?? DateTime.now().toIso8601String())}",
+                            "${context.watch<TranslateProvider>().t('txt_age')} ${_calculateAge(request.dob ?? DateTime.now().toIso8601String())}",
                             style: const TextStyle(color: Colors.grey, fontSize: 12),
                           ),
 
@@ -333,7 +357,7 @@ class PassengerRequestCard extends StatelessWidget {
                               const Text("4.8", style: TextStyle(color: Colors.grey)),
                               const SizedBox(width: 16),
                               Text(
-                                "Seats: ${request.numberOfSeats ?? 1}",
+                                "${context.watch<TranslateProvider>().t('txt_seats')} ${request.numberOfSeats ?? 1}",
                                 style: const TextStyle(color: Colors.grey, fontSize: 12),
                               ),
                             ],
@@ -383,7 +407,7 @@ class PassengerRequestCard extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        const Text("Services: ", style: TextStyle(fontWeight: FontWeight.w500)),
+                        Text(context.watch<TranslateProvider>().t('txt_ride_services'), style: TextStyle(fontWeight: FontWeight.w500)),
                         Expanded(
                           child: Wrap(
                             spacing: 4,
@@ -421,7 +445,7 @@ class _DriverInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 180,
+      height: 200,
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.shade300),
         borderRadius: BorderRadius.circular(10),
@@ -431,12 +455,35 @@ class _DriverInfo extends StatelessWidget {
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 25,
-                backgroundImage: NetworkImage(
-                    "https://qadampayk.com/assets/profile_image/${ride.driverImage}" ?? "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDI0LTAxL3Jhd3BpeGVsb2ZmaWNlMTFfcGhvdG9fb2ZfYWZyaWNhbl9hbWVyaWNhbl9tYW5faW5fYnVzaW5lc3Nfc3VpdF9iYmEzZjA3MS1iN2JkLTQ3MjctODA4MC1hYjJmOTIxOGY1OTMucG5n.png",
+              SizedBox(
+                width: 60,
+                height: 60,
+                child: Stack(
+                  children: [
+                    // Main profile image
+                    CircleAvatar(
+                      radius: 30,
+                      backgroundImage: NetworkImage(
+                        "https://qadampayk.com/assets/profile_image/${ride.driverImage}" ?? "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDI0LTAxL3Jhd3BpeGVsb2ZmaWNlMTFfcGhvdG9fb2ZfYWZyaWNhbl9hbWVyaWNhbl9tYW5faW5fYnVzaW5lc3Nfc3VpdF9iYmEzZjA3MS1iN2JkLTQ3MjctODA4MC1hYjJmOTIxOGY1OTMucG5n.png",
+                      ),
+                    ),
+
+                    // Positioned verify badge
+                if(ride.driverStatus.toString() =="verified" )    Positioned(
+                      bottom: -10,
+                      right: -8,
+                      child: Image.asset(
+                        "assets/images/verify_user.png",
+                        height: 35,
+                        width: 35,
+                      ),
+                    ),
+                  ],
                 ),
               ),
+
+              // Image.asset("assets/images/verify_user.png",height: 25,),
+// Text(ride.driverStatus.toString()),
               const SizedBox(width: 6),
               Expanded(
                 child: Column(
@@ -447,10 +494,11 @@ class _DriverInfo extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 4),
-                    Row(
+                    Row(mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        Text("${ride.brand ?? 'Honda'}\n ${ride.model ?? 'Car'}",
+                        Text("${ride.driverRating }",
                             style: const TextStyle(color: Colors.grey)),
+                        Icon(Icons.star,color: Colors.yellow,),
                         const SizedBox(width: 4),
                         // const Text("|", style: TextStyle(color: Colors.grey)),
                         // const SizedBox(width: 4),
@@ -465,10 +513,11 @@ class _DriverInfo extends StatelessWidget {
               ),
               Column(
                 children: [
-                  Text(
-                    ". ${ride.driverStatus ?? 'Active'}",
-                    style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
-                  ),
+                  Text("${ride.price ?? 243} c",
+                      style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.seedPrimary)),
                   const SizedBox(height: 4),
                   Row(
                     children: List.generate(
@@ -501,14 +550,22 @@ class _DriverInfo extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("ID: ${ride.numberPlate ?? '20435698'}",overflow: TextOverflow.ellipsis,
+                    Text("${context.watch<TranslateProvider>().t('txt_ride_id')} ${ride.numberPlate ?? '20435698'}",overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text("\$${ride.price ?? 243}",
-                        style: const TextStyle(
-                          fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.seedPrimary)),
+                    // const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Text("${ride.brand ?? 'Honda'}\n ${ride.model ?? 'Car'}",
+                            style: const TextStyle(color: Colors.grey,fontSize: 12)),
+                        // const SizedBox(width: 4),
+                        // const Text("|", style: TextStyle(color: Colors.grey)),
+                        // const SizedBox(width: 4),
+                        // const Icon(Icons.star, color: Colors.yellow, size: 16),
+                        // const SizedBox(width: 2),
+                        // Text(ride.driverRating ?? "4.8",
+                        //     style: const TextStyle(color: Colors.grey)),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -535,35 +592,41 @@ class _DriverInfo extends StatelessWidget {
       );
     }
 
-    return Row(
-      children: services.map((service) {
-        return Padding(
-          padding: const EdgeInsets.only(right: 4),
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: service.serviceImage != null && service.serviceImage!.isNotEmpty
-                ? SvgPicture.network(
-              "https://qadampayk.com/assets/services_images/${service.serviceImage!}",
-              width: 20,
-              height: 20,
-              fit: BoxFit.contain, // ensure image fits the box
-              placeholderBuilder: (context) => const Center(
-                child: CircularProgressIndicator(strokeWidth: 1, color: Colors.grey),
-              ),
-              // fallback in case of error
-              errorBuilder: (ctx, _, __) => const Icon(
-                Icons.miscellaneous_services,
-                size: 16,
-                color: Colors.grey,
-              ),
-            )
-                : const Icon(Icons.miscellaneous_services, size: 16, color: Colors.grey),
-          ),
-        );
-      }).toList(),
-    );
+    int half = (services.length / 2).ceil();
+    List<ServiceModel> topRow = services.take(half).toList();
+    List<ServiceModel> bottomRow = services.skip(half).toList();
 
+    Widget buildIcon(ServiceModel service) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 0, bottom: 0),
+        child: SizedBox(
+          width: 15,
+          height: 15,
+          child: service.serviceImage != null && service.serviceImage!.isNotEmpty
+              ? SvgPicture.network(
+            "https://qadampayk.com/assets/services_images/${service.serviceImage!}",
+            width: 12,
+            height: 12,
+            fit: BoxFit.contain,
+            placeholderBuilder: (context) => const SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(strokeWidth: 1),
+            ),
+            errorBuilder: (ctx, _, __) => const Icon(Icons.miscellaneous_services, size: 18),
+          )
+              : const Icon(Icons.miscellaneous_services, size: 18),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: topRow.map((s) => buildIcon(s)).toList()),
+        if (bottomRow.isNotEmpty) Row(children: bottomRow.map((s) => buildIcon(s)).toList()),
+      ],
+    );
   }
 }
 
@@ -586,8 +649,10 @@ class _RideLocations extends StatelessWidget {
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset("assets/images/red_icon.png", height: 15),
-              const SizedBox(height: 4),
+              SvgPicture.asset(
+                "assets/images/red_icon.svg",
+                height: 15,
+              ),              const SizedBox(height: 4),
               const DottedLine(
                 dashLength: 3,
                 dashGapLength: 3,
@@ -597,8 +662,10 @@ class _RideLocations extends StatelessWidget {
                 lineLength: 40,
               ),
               const SizedBox(height: 4),
-              Image.asset("assets/images/blue_icon.png", height: 15),
-            ],
+              SvgPicture.asset(
+                "assets/images/blue_icon.svg",
+                height: 15,
+              ),            ],
           ),
           const SizedBox(width: 30),
           Expanded(
@@ -659,8 +726,10 @@ class _RequestRideLocations extends StatelessWidget {
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset("assets/images/red_icon.png", height: 15),
-              const SizedBox(height: 4),
+              SvgPicture.asset(
+                "assets/images/red_icon.svg",
+                height: 15,
+              ),              const SizedBox(height: 4),
               const DottedLine(
                 dashLength: 3,
                 dashGapLength: 3,
@@ -670,8 +739,10 @@ class _RequestRideLocations extends StatelessWidget {
                 lineLength: 25,
               ),
               const SizedBox(height: 4),
-              Image.asset("assets/images/blue_icon.png", height: 15),
-            ],
+              SvgPicture.asset(
+                "assets/images/blue_icon.svg",
+                height: 15,
+              ),            ],
           ),
           const SizedBox(width: 30),
           Expanded(

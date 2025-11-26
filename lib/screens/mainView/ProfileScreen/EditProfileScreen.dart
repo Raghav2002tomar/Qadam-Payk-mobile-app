@@ -1,21 +1,26 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:bla_bla_car/providers/translate_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../../models/UserProfileModel.dart';
 import '../../../service/local_cache.dart';
+import '../../auth/SignInScreen.dart';
 import '../../auth/controller/auth_provider.dart';
-import '../create /Add_vehical.dart';
+import '../create/Add_vehical.dart';
 
 class ProfileManagementScreen extends StatefulWidget {
   const ProfileManagementScreen({super.key});
 
   @override
-  _ProfileManagementScreenState createState() => _ProfileManagementScreenState();
+  _ProfileManagementScreenState createState() =>
+      _ProfileManagementScreenState();
 }
 
 class _ProfileManagementScreenState extends State<ProfileManagementScreen>
@@ -63,10 +68,10 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+        );
   }
 
   @override
@@ -111,9 +116,12 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
   String _normalizeGender(String? gender) {
     if (gender == null) return "Male";
     switch (gender.trim().toLowerCase()) {
-      case "male": return "Male";
-      case "female": return "Female";
-      default: return "Other";
+      case "male":
+        return "Male";
+      case "female":
+        return "Female";
+      default:
+        return "Other";
     }
   }
 
@@ -145,6 +153,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
   }
 
   Future<void> _saveProfile() async {
+    // print(DateFormat('dd-MM-yyyy').format(DateTime.parse(_dobController.text)));
     final token = await LocalCache.getToken();
     try {
       var request = http.MultipartRequest(
@@ -164,33 +173,31 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
 
       // Add profile image if selected
       if (_profileImage != null && File(_profileImage!).existsSync()) {
-        request.files.add(await http.MultipartFile.fromPath(
-          'profile_image',
-          _profileImage!,
-        ));
+        request.files.add(
+          await http.MultipartFile.fromPath('profile_image', _profileImage!),
+        );
       }
-
-      // // Add government ID images if selected
-      // if (_govIdFront != null && _govIdFront!.existsSync()) {
-      //   request.files.add(await http.MultipartFile.fromPath(
-      //     'government_id[]',
-      //     _govIdFront!.path,
-      //   ));
-      // }
-      //
-      // if (_govIdBack != null && _govIdBack!.existsSync()) {
-      //   request.files.add(await http.MultipartFile.fromPath(
-      //     'government_id[]',
-      //     _govIdBack!.path,
-      //   ));
-      // }
+      // ✅ DEBUG LOGGING (Print everything sent)
+      print("🔹 Sending Profile Update Request:");
+      print("Name: ${request.fields['name']}");
+      print("DOB: ${request.fields['dob']}");
+      print("Gender: ${request.fields['gender']}");
+      print("Headers: ${request.headers}");
+      print("Token: $token");
+      print(
+        "Files Attached: ${request.files.isNotEmpty ? request.files.map((f) => f.filename).join(", ") : "No File"}",
+      );
 
       var response = await request.send();
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Profile updated successfully"),
+          SnackBar(
+            content: Text(
+              context.read<TranslateProvider>().t(
+                'txt_profile_updated_successfully',
+              ),
+            ),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
             duration: Duration(seconds: 3),
@@ -201,8 +208,10 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
       } else {
         debugPrint("Error updating profile: ${response.statusCode}");
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Failed to update profile"),
+          SnackBar(
+            content: Text(
+              context.read<TranslateProvider>().t('txt_error_failed_to_upload'),
+            ),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),
@@ -211,8 +220,10 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
     } catch (e) {
       debugPrint("Error updating profile: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Error updating profile"),
+        SnackBar(
+          content: Text(
+            context.read<TranslateProvider>().t('txt_error_updating'),
+          ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),
@@ -222,9 +233,11 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
 
   int _calculateAge(String dobString) {
     try {
-      final dob = DateTime.parse(dobString);
+      // ✅ Parse dd-MM-yyyy format properly
+      final dob = DateFormat('dd-MM-yyyy').parse(dobString);
       final today = DateTime.now();
       int age = today.year - dob.year;
+
       if (today.month < dob.month || (today.month == dob.month && today.day < dob.day)) {
         age--;
       }
@@ -255,7 +268,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
             ),
             const SizedBox(height: 20),
             Text(
-              'Update Profile Photo',
+              context.watch<TranslateProvider>().t('txt_update_profile_photo'),
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -267,12 +280,12 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
               children: [
                 _buildPhotoOption(
                   icon: Icons.camera_alt,
-                  label: 'Camera',
+                  label: context.watch<TranslateProvider>().t('txt_camera'),
                   onTap: () => _pickImage(ImageSource.camera),
                 ),
                 _buildPhotoOption(
                   icon: Icons.photo_library,
-                  label: 'Gallery',
+                  label: context.watch<TranslateProvider>().t('txt_gallery'),
                   onTap: () => _pickImage(ImageSource.gallery),
                 ),
               ],
@@ -329,7 +342,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
               stops: [0.0, 0.4],
             ),
           ),
-          child: const Center(
+          child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -339,7 +352,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
                 ),
                 SizedBox(height: 16),
                 Text(
-                  'Loading your profile...',
+                  context.watch<TranslateProvider>().t('txt_loading_profile'),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -364,14 +377,14 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
               stops: [0.0, 0.4],
             ),
           ),
-          child: const Center(
+          child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.error_outline, color: Colors.white, size: 64),
                 SizedBox(height: 16),
                 Text(
-                  "No user data available",
+                  context.watch<TranslateProvider>().t('txt_no_user_data'),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -459,6 +472,8 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
                       if (_isEditing) _buildSaveButton(),
                       if (_isEditing) const SizedBox(height: 20),
                       _buildLogoutCard(),
+                      SizedBox(height: 20),
+                      _buildDeleteAccountCard(),
                       const SizedBox(height: 40),
                     ],
                   ),
@@ -543,7 +558,8 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
       }
     } else {
       // API image path - prepend base URL
-      final fullImageUrl = 'https://qadampayk.com/assets/profile_image/$_profileImage';
+      final fullImageUrl =
+          'https://qadampayk.com/assets/profile_image/$_profileImage';
       return NetworkImage(fullImageUrl);
     }
     return null;
@@ -582,7 +598,9 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'Personal Information',
+                context.watch<TranslateProvider>().t(
+                  'txt_personal_information',
+                ),
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -593,107 +611,77 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
           ),
           const SizedBox(height: 20),
           if (_isEditing) ...[
-            _buildModernTextField("Full Name", _nameController),
+            _buildModernTextField(
+              context.watch<TranslateProvider>().t('txt_full_name'),
+              _nameController,
+            ),
             const SizedBox(height: 16),
             GestureDetector(
               onTap: () async {
-                DateTime initialDate = DateTime.now().subtract(const Duration(days: 365 * 20));
+                DateTime initialDate = DateTime.now().subtract(
+                  const Duration(days: 365 * 20),
+                );
+
+                // ✅ Parse dd-MM-yyyy format properly
                 if (_dobController.text.isNotEmpty) {
-                  initialDate = DateTime.tryParse(_dobController.text) ?? initialDate;
+                  try {
+                    initialDate = DateFormat(
+                      'dd-MM-yyyy',
+                    ).parse(_dobController.text);
+                  } catch (_) {}
                 }
+
                 final picked = await showDatePicker(
                   context: context,
                   initialDate: initialDate,
                   firstDate: DateTime(1900),
                   lastDate: DateTime.now(),
                 );
+
                 if (picked != null) {
-                  _dobController.text = picked.toIso8601String().split('T').first;
+                  // ✅ Always set dd-MM-yyyy everywhere
+                  _dobController.text = DateFormat('dd-MM-yyyy').format(picked);
                 }
               },
               child: AbsorbPointer(
-                child: _buildModernTextField("Date of Birth", _dobController),
+                child: _buildModernTextField(
+                  context.watch<TranslateProvider>().t('txt_date_of_birth'),
+                  _dobController,
+                ),
               ),
             ),
             const SizedBox(height: 16),
             _buildModernGenderDropdown(),
             const SizedBox(height: 16),
-            _buildGovernmentIdSection(),
           ] else ...[
-            _buildInfoRow(Icons.person, "Name", _user?.name ?? "Not provided"),
+            _buildInfoRow(
+              Icons.person,
+              context.watch<TranslateProvider>().t('txt_name'),
+              _user?.name ?? "*******",
+            ),
             const SizedBox(height: 16),
             _buildInfoRow(
               Icons.cake,
-              "Age",
-              _user?.dob != null ? _calculateAge(_user!.dob!).toString() : "Not provided",
+              context.watch<TranslateProvider>().t('txt_age'),
+              _user?.dob != null
+                  ? _calculateAge(_user!.dob!).toString()
+                  : "*******",
             ),
             const SizedBox(height: 16),
-            _buildInfoRow(Icons.people, "Gender", _user?.gender ?? "Not specified"),
+            _buildInfoRow(
+              Icons.people,
+              context.watch<TranslateProvider>().t('txt_gender'),
+              _user?.gender ?? "*******",
+            ),
           ],
           const SizedBox(height: 16),
-          _buildInfoRow(Icons.phone, "Phone", _user?.phoneNumber ?? "Not provided"),
+          _buildInfoRow(
+            Icons.phone,
+            context.watch<TranslateProvider>().t('txt_phone_number'),
+            _user?.phoneNumber ?? "*******",
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildGovernmentIdSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Government ID",
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF1A1A1A),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () => _pickGovIdImage(isFront: true),
-                child: Container(
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade400),
-                  ),
-                  child: _govIdFront != null
-                      ? ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.file(_govIdFront!, fit: BoxFit.cover),
-                  )
-                      : const Center(child: Text("Upload Front Side")),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: GestureDetector(
-                onTap: () => _pickGovIdImage(isFront: false),
-                child: Container(
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade400),
-                  ),
-                  child: _govIdBack != null
-                      ? ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.file(_govIdBack!, fit: BoxFit.cover),
-                  )
-                      : const Center(child: Text("Upload Back Side")),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 
@@ -767,7 +755,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
       child: DropdownButtonFormField<String>(
         value: _selectedGender,
         decoration: InputDecoration(
-          labelText: "Gender",
+          labelText: context.watch<TranslateProvider>().t('txt_gender'),
           labelStyle: GoogleFonts.inter(
             color: const Color(0xFF666666),
             fontSize: 14,
@@ -775,10 +763,19 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
           ),
           border: InputBorder.none,
         ),
-        items: const [
-          DropdownMenuItem(value: "Male", child: Text("Male")),
-          DropdownMenuItem(value: "Female", child: Text("Female")),
-          DropdownMenuItem(value: "Other", child: Text("Other")),
+        items: [
+          DropdownMenuItem(
+            value: "Male",
+            child: Text(context.watch<TranslateProvider>().t('txt_male')),
+          ),
+          DropdownMenuItem(
+            value: "Female",
+            child: Text(context.watch<TranslateProvider>().t('txt_female')),
+          ),
+          DropdownMenuItem(
+            value: "Other",
+            child: Text(context.watch<TranslateProvider>().t('txt_other')),
+          ),
         ],
         onChanged: (val) => setState(() => _selectedGender = val),
       ),
@@ -818,7 +815,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'Your Stats',
+                context.watch<TranslateProvider>().t('txt_your_stats'),
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -830,9 +827,27 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
           const SizedBox(height: 20),
           Row(
             children: [
-              Expanded(child: _buildStatItem("Tips", "0", Icons.stars)),
-              Expanded(child: _buildStatItem("Rides", "0", Icons.directions_car)),
-              Expanded(child: _buildStatItem("Points", "0", Icons.loyalty)),
+              Expanded(
+                child: _buildStatItem(
+                  context.watch<TranslateProvider>().t('txt_tips'),
+                  "0",
+                  Icons.stars,
+                ),
+              ),
+              Expanded(
+                child: _buildStatItem(
+                  context.watch<TranslateProvider>().t('txt_rides'),
+                  "0",
+                  Icons.directions_car,
+                ),
+              ),
+              Expanded(
+                child: _buildStatItem(
+                  context.watch<TranslateProvider>().t('txt_points'),
+                  "0",
+                  Icons.loyalty,
+                ),
+              ),
             ],
           ),
         ],
@@ -909,7 +924,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'Quick Actions',
+                context.watch<TranslateProvider>().t('txt_quick_actions'),
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
@@ -921,30 +936,37 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
           const SizedBox(height: 16),
           _buildActionTile(
             icon: Icons.directions_car,
-            title: "Add Vehicle",
-            subtitle: "Register your vehicle for rides",
+            title: context.watch<TranslateProvider>().t('txt_add_vehicle'),
+            subtitle: context.watch<TranslateProvider>().t(
+              'txt_register_your_vehicle',
+            ),
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => VehicleScreen()));
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => VehicleScreen()),
+              );
             },
           ),
+          // const SizedBox(height: 12),
+          // _buildActionTile(
+          //   icon: Icons.payment,
+          //   title: context.watch<TranslateProvider>().t('txt_payment_methods'),
+          //   subtitle: context.watch<TranslateProvider>().t('txt_manage_your_payment'),
+          //   onTap: () {
+          //     // Navigate to payment screen
+          //   },
+          // ),
           const SizedBox(height: 12),
-          _buildActionTile(
-            icon: Icons.payment,
-            title: "Payment Methods",
-            subtitle: "Manage your payment options",
-            onTap: () {
-              // Navigate to payment screen
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildActionTile(
-            icon: Icons.settings,
-            title: "Settings",
-            subtitle: "App preferences and privacy",
-            onTap: () {
-              // Navigate to settings screen
-            },
-          ),
+          // _buildActionTile(
+          //   icon: Icons.settings,
+          //   title: context.watch<TranslateProvider>().t('txt_settings'),
+          //   subtitle: context.watch<TranslateProvider>().t(
+          //     'txt_app_preference_privacy',
+          //   ),
+          //   onTap: () {
+          //     // Navigate to settings screen
+          //   },
+          // ),
         ],
       ),
     );
@@ -988,22 +1010,18 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
                       color: const Color(0xFF1A1A1A),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: const Color(0xFF666666),
-                    ),
-                  ),
+                  // const SizedBox(height: 2),
+                  // Text(
+                  //   subtitle,
+                  //   style: GoogleFonts.inter(
+                  //     fontSize: 13,
+                  //     color: const Color(0xFF666666),
+                  //   ),
+                  // ),
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
-              color: Color(0xFF666666),
-              size: 20,
-            ),
+            const Icon(Icons.chevron_right, color: Color(0xFF666666), size: 20),
           ],
         ),
       ),
@@ -1041,7 +1059,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
                 const Icon(Icons.save, color: Colors.white, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  "Save Changes",
+                  context.watch<TranslateProvider>().t('txt_save_changes'),
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -1075,20 +1093,22 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
           final result = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               title: Text(
-                "Logout",
+                context.watch<TranslateProvider>().t('txt_logout'),
                 style: GoogleFonts.inter(fontWeight: FontWeight.w700),
               ),
               content: Text(
-                "Are you sure you want to logout?",
+                context.watch<TranslateProvider>().t('txt_logout_confirmation'),
                 style: GoogleFonts.inter(fontSize: 14),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
                   child: Text(
-                    "Cancel",
+                    context.watch<TranslateProvider>().t('txt_cancel'),
                     style: GoogleFonts.inter(color: const Color(0xFF666666)),
                   ),
                 ),
@@ -1101,7 +1121,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
                     ),
                   ),
                   child: Text(
-                    "Logout",
+                    context.watch<TranslateProvider>().t('txt_logout'),
                     style: GoogleFonts.inter(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -1113,7 +1133,10 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
           );
 
           if (result == true) {
-            final loginProvider = Provider.of<LoginProvider>(context, listen: false);
+            final loginProvider = Provider.of<LoginProvider>(
+              context,
+              listen: false,
+            );
             await loginProvider.logout(context);
           }
         },
@@ -1133,7 +1156,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  "Logout",
+                  context.watch<TranslateProvider>().t('txt_logout'),
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -1148,4 +1171,139 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
       ),
     );
   }
+
+  Widget _buildDeleteAccountCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () async {
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Text(
+                context.watch<TranslateProvider>().t('txt_delete_account'),
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700),
+              ),
+              content: Text(
+                context.watch<TranslateProvider>().t('txt_delete_account_confirmation'),
+                style: GoogleFonts.inter(fontSize: 14),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(
+                    context.watch<TranslateProvider>().t('txt_cancel'),
+                    style: GoogleFonts.inter(color: const Color(0xFF666666)),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    context.watch<TranslateProvider>().t('txt_delete'),
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+
+          if (confirm != true) return;
+
+          // Call the delete account API
+          final authToken = await LocalCache.getToken();
+          const baseUrl = "https://qadampayk.com/api/delete-account";
+
+          try {
+            final res = await http.post(
+              Uri.parse(baseUrl),
+              headers: {
+                'Accept': 'application/json',
+                'Authorization': 'Bearer $authToken',
+              },
+            );
+
+            final jsonRes = jsonDecode(res.body);
+            if (res.statusCode == 200 && jsonRes['status'] == true) {
+              // Account deleted successfully, clear token and navigate to login
+              await LocalCache.logout();
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(jsonRes['message'] ?? 'Account deleted.')),
+                );
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PhoneNumberScreen()),
+                );              }
+            } else {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(jsonRes['message'] ?? 'Failed to delete account.')),
+                );
+              }
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error: $e')),
+              );
+            }
+          }
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.delete_forever, color: Colors.red, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  context.watch<TranslateProvider>().t('txt_delete_account'),
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.red,
+                  ),
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.red, size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
 }

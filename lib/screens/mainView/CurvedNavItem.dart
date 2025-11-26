@@ -3,16 +3,19 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 /// Curved navigation bar item
 class CurvedNavItem {
-  final String svgAsset; // SVG asset path
+  final String svgAsset;
   final String label;
   final Color? activeColor;
+  final int? badgeCount; // optional badge
 
   CurvedNavItem({
     required this.svgAsset,
     required this.label,
     this.activeColor,
+    this.badgeCount,
   });
 }
+
 
 /// Curved navigation bar widget
 class CurvedNavBar extends StatelessWidget {
@@ -56,8 +59,10 @@ class CurvedNavBar extends StatelessWidget {
               label: it.label,
               color: color,
               active: active,
+              badgeCount: it.badgeCount, // new
               onTap: () => onTap(i),
             );
+
           }),
         ),
       ),
@@ -72,6 +77,7 @@ class _NavButton extends StatelessWidget {
   final bool active;
   final Color color;
   final VoidCallback onTap;
+  final int? badgeCount; // new
 
   const _NavButton({
     required this.svgAsset,
@@ -79,11 +85,11 @@ class _NavButton extends StatelessWidget {
     required this.active,
     required this.color,
     required this.onTap,
+    this.badgeCount,
   });
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = Theme.of(context).textTheme.labelLarge!;
     return Expanded(
       child: InkWell(
         onTap: onTap,
@@ -93,15 +99,37 @@ class _NavButton extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              SizedBox(
-                height: 26,
-                width: 26,
-                child: SvgPicture.asset(
-                  svgAsset,
-                  colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-                  fit: BoxFit.contain,
-                  alignment: Alignment.center,
-                ),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  SizedBox(
+                    height: 26,
+                    width: 26,
+                    child: SvgPicture.asset(
+                      svgAsset,
+                      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+                      fit: BoxFit.contain,
+                      alignment: Alignment.center,
+                    ),
+                  ),
+                  if (badgeCount != null && badgeCount! > 0)
+                    Positioned(
+                      right: -6,
+                      top: -6,
+                      child: CircleAvatar(
+                        radius: 8,
+                        backgroundColor: Colors.red,
+                        child: Text(
+                          badgeCount!.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 6),
               AnimatedDefaultTextStyle(
@@ -121,7 +149,6 @@ class _NavButton extends StatelessWidget {
         ),
       ),
     );
-
   }
 }
 

@@ -16,7 +16,7 @@ import 'package:http/http.dart' as http;
 import '../../../../api_service/app_constocter.dart';
 import '../../../../models/CityModel.dart';
 import '../../../../service/local_cache.dart';
-import '../../create /VehicleStorage.dart';
+import '../../create/VehicleStorage.dart';
 import '../model/service_model.dart';
 
 class SearchProvider extends ChangeNotifier {
@@ -45,7 +45,7 @@ class SearchProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final url = Uri.parse('${appConstructor.BaseURL}${appConstructor.getCity}');
+      final url = Uri.parse('${appConstructor.BaseURL}${appConstructor.getCity}?language=ru');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {

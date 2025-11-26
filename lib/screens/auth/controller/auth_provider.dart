@@ -1,6 +1,11 @@
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:path/path.dart';
+// import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../api_service/api_serviece.dart';
 import '../../../api_service/app_constocter.dart';
@@ -27,7 +32,7 @@ class LoginProvider extends ChangeNotifier {
 
   Future<bool> sendOtp(BuildContext context, String phoneNumber) async {
     if (phoneNumber.isEmpty || phoneNumber.length < 9) {
-      Fluttertoast.showToast(
+     Fluttertoast.showToast(
         msg: "Please enter a valid phone number",
         backgroundColor: Colors.red,
       );
@@ -37,21 +42,36 @@ class LoginProvider extends ChangeNotifier {
     setLoading(true);
 
     try {
+      // ✅ Detect platform type dynamically
+      final deviceType = Platform.isAndroid ? "android" : "ios";
+
+      // ✅ Get device ID safely
+      final deviceInfo = DeviceInfoPlugin();
+      String deviceId = "unknown";
+
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+        deviceId = androidInfo.id ?? "unknown";
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        deviceId = iosInfo.identifierForVendor ?? "unknown";
+      }
       final response = await apiService.postFormRequest(
         endpoint: appConstructor.login,
         formData: {
           "phone_number": phoneNumber,
-          "device_type": "android",
-          "device_id": "12345",
+          "device_type": deviceType,
+          "device_id": deviceId,
           "device_token": "abcd1234",
           "otp": "123456",
+          "language": "ru"
         },
       );
 
       if (response["status"] == true) {
         final otp = response["data"]["otp"];
         latestOtp = otp.toString(); // convert to string
-        Fluttertoast.showToast(
+        if(App_Constructor().istestmode)  Fluttertoast.showToast(
           msg: "OTP Sent: ${otp.toString()}", // ✅ Convert to string
           backgroundColor: Colors.green,
         );
@@ -105,10 +125,10 @@ class LoginProvider extends ChangeNotifier {
         await LocalCache.setUserLoggedIn(true);
         await LocalCache.saveToken(apiToken);
 
-        Fluttertoast.showToast(
-          msg: response["message"] ?? "Login Successful",
-          backgroundColor: Colors.green,
-        );
+        // Fluttertoast.showToast(
+        //   msg: response["message"] ?? "Login Successful",
+        //   backgroundColor: Colors.green,
+        // );
         return true;
       } else {
         Fluttertoast.showToast(
@@ -176,6 +196,7 @@ class LoginProvider extends ChangeNotifier {
     setLoading(true);
     try {
       final response = await apiService.getAuthRequest(
+        context: context,
         endpoint: appConstructor.get_profile, // Replace with your profile endpoint
       );
 

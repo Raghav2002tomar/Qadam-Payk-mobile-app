@@ -1,15 +1,24 @@
 import 'dart:io';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
+import '../../../api_service/app_constocter.dart';
 import '../../../models/UserProfileModel.dart';
 import '../../../providers/translate_provider.dart';
 import '../../../service/colors.dart';
+import '../../../service/local_cache.dart';
 import '../../auth/controller/auth_provider.dart';
 import 'EditProfileScreen.dart';
+import 'PrivacyPolicyScreen.dart';
+import 'QueryScreen.dart';
+import 'TermsConditionsScreen.dart';
+import 'ViewResponceScreen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -65,6 +74,40 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     super.dispose();
   }
 
+  Future<void> _updateLanguage(String lang) async {
+    final deviceInfo = DeviceInfoPlugin();
+    String deviceId = "unknown";
+    // final deviceId = await LocalCache.getDeviceId(); // Or wherever you store it
+    final deviceType = Platform.isAndroid ? "android" : "ios";
+    final token = await LocalCache.getToken();
+
+
+    try {
+      final response = await http.post(
+        Uri.parse("https://qadampayk.com/api/update-language"),
+        headers: {
+          "Accept": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: {
+          "language": lang,
+          "device_id": deviceId,
+          "device_type": deviceType,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        context.read<TranslateProvider>().setLocale(lang); // ✅ Update app language
+        // Fluttertoast.showToast(msg: "Language updated successfully");
+      } else {
+        // Fluttertoast.showToast(msg: "Failed to update language");
+      }
+    } catch (e) {
+      // Fluttertoast.showToast(msg: "Error updating language");
+    }
+  }
+
+
   Future<void> _loadProfile() async {
     final loginProvider = Provider.of<LoginProvider>(context, listen: false);
     loginProvider.setLoading(true);
@@ -113,7 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             ),
             const SizedBox(height: 20),
             Text(
-              'Update Profile Photo',
+              context.watch<TranslateProvider>().t('txt_update_profile_photo'),
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -125,12 +168,12 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               children: [
                 _buildPhotoOption(
                   icon: Icons.camera_alt,
-                  label: 'Camera',
+                  label: context.watch<TranslateProvider>().t('txt_camera'),
                   onTap: () => _pickImage(ImageSource.camera),
                 ),
                 _buildPhotoOption(
                   icon: Icons.photo_library,
-                  label: 'Gallery',
+                  label: context.watch<TranslateProvider>().t('txt_gallery'),
                   onTap: () => _pickImage(ImageSource.gallery),
                 ),
               ],
@@ -199,34 +242,103 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF008955), Color(0xFFF8F9FA)],
-              stops: [0.0, 0.4],
-            ),
-          ),
-          child: const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  strokeWidth: 3,
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'Loading your profile...',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+        backgroundColor: const Color(0xFFF8F9FA),
+        body: RefreshIndicator(
+          onRefresh: _loadProfile, // your async refresh function
+          child: CustomScrollView(
+            controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(), // required for pull-to-refresh
+            slivers: [
+              // Custom SliverAppBar with gradient
+              SliverAppBar(
+                automaticallyImplyLeading: false,
+                expandedHeight: 220,
+                floating: false,
+                pinned: true,
+                backgroundColor: const Color(0xFF008955),
+                flexibleSpace: FlexibleSpaceBar(
+                  title: Text(
+                    "",
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  background: Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF008955), Color(0xFF00A562)],
+                      ),
+                    ),
+                    child: SafeArea(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: _buildProfileAvatar(_user?.idVerified.toString()),
+                          ),
+                          const SizedBox(height: 16),
+                          FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: Text(
+                              _user?.name ?? 'User',
+                              style: GoogleFonts.inter(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.phone, size: 16, color: Colors.white70),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _user?.phoneNumber ?? "No Phone",
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    color: Colors.white70,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+
+              // Content
+              SliverToBoxAdapter(
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          _buildAccountOptionsCard(),
+                          const SizedBox(height: 20),
+                          _buildLogoutCard(),
+                          const SizedBox(height: 120),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -243,14 +355,14 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               stops: [0.0, 0.4],
             ),
           ),
-          child: const Center(
+          child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.error_outline, color: Colors.white, size: 64),
                 SizedBox(height: 16),
                 Text(
-                  "No user data available",
+                  context.watch<TranslateProvider>().t('txt_no_user_data'),
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -299,7 +411,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                       // const SizedBox(height: 60),
                       FadeTransition(
                         opacity: _fadeAnimation,
-                        child: _buildProfileAvatar(),
+                        child: _buildProfileAvatar( _user?.idVerified.toString()),
                       ),
                       const SizedBox(height: 16),
                       FadeTransition(
@@ -364,7 +476,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
 
-  Widget _buildProfileAvatar() {
+  Widget _buildProfileAvatar(String? verify  ) {
+
     String? imageUrl;
     if ((_profileImage ?? '').isNotEmpty) {
       if (_profileImage!.startsWith('http')) {
@@ -374,34 +487,61 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       }
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: CircleAvatar(
-        radius: 55,
-        backgroundColor: Colors.white,
-        child: CircleAvatar(
-          radius: 51,
-          backgroundImage: (imageUrl ?? '').isNotEmpty
-              ? NetworkImage(imageUrl!)
-              : null,
-          child: (imageUrl ?? '').isEmpty
-              ? const Icon(
-            Icons.person,
-            size: 55,
-            color: Color(0xFF008955),
-          )
-              : null,
+          child: CircleAvatar(
+            radius: 55,
+            backgroundColor: Colors.white,
+            child: CircleAvatar(
+              radius: 51,
+              backgroundImage: (imageUrl ?? '').isNotEmpty
+                  ? NetworkImage(imageUrl!)
+                  : null,
+              child: (imageUrl ?? '').isEmpty
+                  ? const Icon(
+                Icons.person,
+                size: 55,
+                color: Color(0xFF008955),
+              )
+                  : null,
+            ),
+          ),
         ),
-      ),
+
+        // ✅ Verify badge
+        if (verify == "true")
+          Positioned(
+            bottom: 0,
+            right: 5,
+            child: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white, // white border
+              ),
+              padding: const EdgeInsets.all(4),
+              child: ClipOval(
+                child: Image.asset(
+                  "assets/images/verify_user.png",
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -422,28 +562,65 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         children: [
           _buildModernTile(
             Icons.person_outline,
-            "Profile Management",
-            "Edit your personal information",
+            context.watch<TranslateProvider>().t('txt_profile_management'),
+            context.watch<TranslateProvider>().t('txt_edit_your_personal_info'),
             onTap: _saveProfile,
           ),
           _buildDivider(),
           _buildModernTile(
-            Icons.shopping_bag_outlined,
-            "My Orders",
-            "View your order history",
+            Icons.view_agenda_outlined,
+            context.watch<TranslateProvider>().t('txt_view_responce'),
+            context.watch<TranslateProvider>().t('txt_edit_your_personal_info'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const Viewresponcescreen()),
+              );
+            },
           ),
           _buildDivider(),
           _buildModernTile(
-            Icons.favorite_border,
-            "Wishlist",
-            "Your saved favorites",
+            Icons.privacy_tip_outlined,
+            context.watch<TranslateProvider>().t('txt_term_and_conditions'),
+            context.watch<TranslateProvider>().t('txt_view_term_and_conditions'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const TermsConditionsScreen()),
+              );
+            },
           ),
           _buildDivider(),
           _buildModernTile(
-            Icons.settings_outlined,
-            "Settings",
-            "App preferences and privacy",
+            Icons.privacy_tip_outlined,
+            context.watch<TranslateProvider>().t('txt_privacy_policy'),
+            context.watch<TranslateProvider>().t('txt_view_privacy_policy'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
+              );
+            },
           ),
+          _buildDivider(),
+          _buildModernTile(
+            Icons.question_answer_outlined,
+            context.watch<TranslateProvider>().t('txt_view_query'),
+            context.watch<TranslateProvider>().t('txt_send_query'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const QueryScreen()),
+              );
+            },
+          ),
+
+          // _buildDivider(),
+          // _buildModernTile(
+          //   Icons.settings_outlined,
+          //   context.watch<TranslateProvider>().t('txt_settings'),
+          //   context.watch<TranslateProvider>().t('txt_app_preference_privacy'),
+          // ),
           _buildDivider(),
           _buildLanguageTile(),
         ],
@@ -489,14 +666,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                       color: const Color(0xFF1A1A1A),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: const Color(0xFF666666),
-                    ),
-                  ),
+
                 ],
               ),
             ),
@@ -534,21 +704,21 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  context.watch<TranslateProvider>().t('language'),
+                  context.watch<TranslateProvider>().t('txt_language'),
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: const Color(0xFF1A1A1A),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  "Choose your preferred language",
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: const Color(0xFF666666),
-                  ),
-                ),
+                // const SizedBox(height: 2),
+                // Text(
+                //   context.watch<TranslateProvider>().t('txt_choose_your_language'),
+                //   style: GoogleFonts.inter(
+                //     fontSize: 13,
+                //     color: const Color(0xFF666666),
+                //   ),
+                // ),
               ],
             ),
           ),
@@ -568,49 +738,42 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               borderRadius: BorderRadius.circular(12),
             ),
             elevation: 8,
-            onSelected: (lang) => context.read<TranslateProvider>().setLocale(lang),
+            onSelected: (lang) => _updateLanguage(lang),  // ✅ Updated here
             itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'en',
-                child: Row(
-                  children: [
-                    const Icon(Icons.language, color: Color(0xFF008955), size: 18),
-                    const SizedBox(width: 8),
-                    Text(
-                      'English',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-                    ),
-                  ],
+              if (App_Constructor().istestmode)
+                PopupMenuItem(
+                  value: 'en',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.language, color: Color(0xFF008955), size: 18),
+                      const SizedBox(width: 8),
+                      Text('English', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
+                    ],
+                  ),
                 ),
-              ),
               PopupMenuItem(
                 value: 'ru',
                 child: Row(
                   children: [
                     const Icon(Icons.language, color: Color(0xFF008955), size: 18),
                     const SizedBox(width: 8),
-                    Text(
-                      'Русский',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-                    ),
+                    Text('Русский', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
               PopupMenuItem(
-                value: 'tg',
+                value: 'tj',
                 child: Row(
                   children: [
                     const Icon(Icons.language, color: Color(0xFF008955), size: 18),
                     const SizedBox(width: 8),
-                    Text(
-                      'Тоҷикӣ',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-                    ),
+                    Text('Тоҷикӣ', style: GoogleFonts.inter(fontWeight: FontWeight.w500)),
                   ],
                 ),
               ),
             ],
           ),
+
         ],
       ),
     );
@@ -636,18 +799,18 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             builder: (context) => AlertDialog(
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               title: Text(
-                "Logout",
+                context.watch<TranslateProvider>().t('txt_logout'),
                 style: GoogleFonts.inter(fontWeight: FontWeight.w700),
               ),
               content: Text(
-                "Are you sure you want to logout?",
+                context.watch<TranslateProvider>().t('txt_logout_confirmation'),
                 style: GoogleFonts.inter(fontSize: 14),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
                   child: Text(
-                    "Cancel",
+                    context.watch<TranslateProvider>().t('txt_cancel'),
                     style: GoogleFonts.inter(color: const Color(0xFF666666)),
                   ),
                 ),
@@ -660,7 +823,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                     ),
                   ),
                   child: Text(
-                    "Logout",
+                    context.watch<TranslateProvider>().t('txt_logout'),
                     style: GoogleFonts.inter(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -695,21 +858,21 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Logout",
+                      context.watch<TranslateProvider>().t('txt_logout'),
                       style: GoogleFonts.inter(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         color: Colors.red,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      "Sign out of your account",
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: const Color(0xFF666666),
-                      ),
-                    ),
+                    // const SizedBox(height: 2),
+                    // Text(
+                    //   context.watch<TranslateProvider>().t('txt_sign_out_account'),
+                    //   style: GoogleFonts.inter(
+                    //     fontSize: 13,
+                    //     color: const Color(0xFF666666),
+                    //   ),
+                    // ),
                   ],
                 ),
               ),

@@ -1,7 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../screens/auth/SignInScreen.dart';
 import '../service/local_cache.dart';
 import 'app_constocter.dart';
 
@@ -246,6 +250,7 @@ class Api_Service {
 
   /// Custom GET request with Authorization header
   Future<dynamic> getAuthRequest({
+    context,
     required String endpoint,
     Map<String, String>? queryParams,
   }) async {
@@ -275,7 +280,14 @@ class Api_Service {
         return jsonDecode(response.body);
       } else if (response.statusCode == 401) {
         throw Exception("Unauthorized: Invalid or expired token");
-      } else {
+
+      } else if(response.statusCode == 403){
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PhoneNumberScreen()),
+        );
+      }
+      else {
         throw Exception(
             "Server Error: ${response.statusCode} - ${response.reasonPhrase}");
       }

@@ -175,7 +175,7 @@ class CartScreen extends StatelessWidget {
                             style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
                           ),
                           Text(
-                            '\$${cart.totalAmount.toStringAsFixed(2)}',
+                            'c ${cart.totalAmount.toStringAsFixed(2)}',
                             style: tt.headlineSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: cs.onSurface,

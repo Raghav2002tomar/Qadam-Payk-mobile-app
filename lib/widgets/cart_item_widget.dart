@@ -72,7 +72,7 @@ class CartItemWidget extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '\$${cartItem.product.price.toStringAsFixed(2)} each',
+                    'c ${cartItem.product.price.toStringAsFixed(2)} each',
                     style: tt.bodyMedium?.copyWith(
                       color: cs.onSurfaceVariant,
                     ),
@@ -142,7 +142,7 @@ class CartItemWidget extends StatelessWidget {
 
                       // Total Price
                       Text(
-                        '\$${cartItem.totalPrice.toStringAsFixed(2)}',
+                        'c ${cartItem.totalPrice.toStringAsFixed(2)}',
                         style: tt.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: cs.onSurface,

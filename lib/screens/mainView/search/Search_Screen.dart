@@ -1,9 +1,12 @@
 import 'package:bla_bla_car/screens/mainView/search/parcel_list_screen.dart';
 import 'package:bla_bla_car/screens/mainView/search/ride_list_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 
+import '../../../providers/translate_provider.dart';
 import '../../../service/colors.dart';
 import 'controller/search_provoder.dart';
 
@@ -113,8 +116,8 @@ class _SearchHomeState extends State<SearchHome> {
                               ),
                               child: Row(
                                 children: [
-                                  _buildTabButton("Taxi", 0, cs),
-                                  _buildTabButton("Parcel", 1, cs),
+                                  _buildTabButton(context.watch<TranslateProvider>().t('txt_taxi'), 0, cs),
+                                  _buildTabButton(context.watch<TranslateProvider>().t('txt_parcel'), 1, cs),
                                 ],
                               ),
                             ),
@@ -190,19 +193,19 @@ class _SearchHomeState extends State<SearchHome> {
       children: [
         _LocationField(
           key: _fromFieldKey,
-          label: "Leaving from",
+          label: context.watch<TranslateProvider>().t('txt_leaving_from'),
           controller: _fromController,
           options: _cityNames,
-          icon: "assets/images/red_icon.png",
+          icon: "assets/images/red_icon.svg",
           cs: cs,
         ),
         const SizedBox(height: 16),
         _LocationField(
           key: _toFieldKey,
-          label: "Going to",
+          label: context.watch<TranslateProvider>().t('txt_going_to'),
           controller: _toController,
           options: _cityNames,
-          icon: "assets/images/blue_icon.png",
+          icon: "assets/images/blue_icon.svg",
           cs: cs,
         ),
         const SizedBox(height: 16),
@@ -220,19 +223,19 @@ class _SearchHomeState extends State<SearchHome> {
       children: [
         _LocationField(
           key: _pickupFieldKey,
-          label: "Pickup Location",
+          label: context.watch<TranslateProvider>().t('txt_pickup_location'),
           controller: _pickupController,
           options: _cityNames,
-          icon: "assets/images/red_icon.png",
+          icon: "assets/images/red_icon.svg",
           cs: cs,
         ),
         const SizedBox(height: 16),
         _LocationField(
           key: _dropFieldKey,
-          label: "Drop Location",
+          label: context.watch<TranslateProvider>().t('txt_drop_location'),
           controller: _dropController,
           options: _cityNames,
-          icon: "assets/images/blue_icon.png",
+          icon: "assets/images/blue_icon.svg",
           cs: cs,
         ),
         const SizedBox(height: 16),
@@ -279,7 +282,7 @@ class _SearchHomeState extends State<SearchHome> {
                 Image.asset("assets/images/calendar.png", height: 20),
                 const SizedBox(width: 8),
                 Text(
-                  "Date",
+                  context.watch<TranslateProvider>().t('txt_date'),
                   style: TextStyle(
                     fontSize: 14,
                     color: cs.onSurfaceVariant,
@@ -323,7 +326,7 @@ class _SearchHomeState extends State<SearchHome> {
                 Icon(Icons.access_time, color: cs.primary, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  "Pickup Time",
+                  context.watch<TranslateProvider>().t('txt_pickup_time'),
                   style: TextStyle(
                     fontSize: 14,
                     color: cs.onSurfaceVariant,
@@ -335,7 +338,7 @@ class _SearchHomeState extends State<SearchHome> {
             Text(
               _selectedTime != null
                   ? _selectedTime!.format(context)
-                  : "Select Time",
+                  : context.watch<TranslateProvider>().t('txt_select_time'),
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -357,7 +360,7 @@ class _SearchHomeState extends State<SearchHome> {
             Image.asset("assets/images/user.png", width: 24, height: 24),
             const SizedBox(width: 8),
             Text(
-              "Passengers",
+              context.watch<TranslateProvider>().t('txt_passengers'),
               style: TextStyle(
                 fontSize: 14,
                 color: cs.onSurfaceVariant,
@@ -390,7 +393,7 @@ class _SearchHomeState extends State<SearchHome> {
   }
 
   Widget _buildSearchButton(ColorScheme cs) {
-    final String label = _selectedTabIndex == 0 ? "Search Ride" : "Search Parcel";
+    final String label = _selectedTabIndex == 0 ? context.watch<TranslateProvider>().t('txt_search_ride') : context.watch<TranslateProvider>().t('txt_search_parcel');
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -566,7 +569,7 @@ class _LocationFieldState extends State<_LocationField> {
           prefixIcon: Container(
             margin: const EdgeInsets.all(8),
             padding: const EdgeInsets.all(6),
-            child: Image.asset(widget.icon, height: 20),
+            child: SvgPicture.asset(widget.icon, height: 20),
           ),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           filled: true,

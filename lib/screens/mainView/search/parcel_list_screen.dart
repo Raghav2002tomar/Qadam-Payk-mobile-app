@@ -1,11 +1,16 @@
+import 'package:bla_bla_car/providers/translate_provider.dart';
 import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 
 import '../../../service/colors.dart';
-import '../create /OrderDetailScreen.dart';
+import '../../../service/local_cache.dart';
+import '../../auth/SignInScreen.dart';
+import '../create/OrderDetailScreen.dart';
 import '../mytrip/PassengerOrderDetailScreen.dart';
+import '../provide/ChatProvider.dart';
 import 'controller/RideListController.dart';
 import 'model/ride_model.dart';
 
@@ -57,11 +62,12 @@ class _ParcelListScreenState extends State<ParcelListScreen>
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final unselectedColor = cs.surfaceVariant.withOpacity(0.4);
+    final translate = context.watch<TranslateProvider>();
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Parcel Requests"),
+        title: Text(context.watch<TranslateProvider>().t('txt_parcel_request')),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -87,9 +93,9 @@ class _ParcelListScreenState extends State<ParcelListScreen>
                 unselectedLabelColor: Colors.grey,
                 labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                 unselectedLabelStyle: const TextStyle(fontSize: 14),
-                tabs: const [
-                  Tab(text: 'Drivers'),
-                  Tab(text: 'Senders'),
+                tabs: [
+                  Tab(text: context.watch<TranslateProvider>().t('txt_parcel_drivers')),
+                  Tab(text: context.watch<TranslateProvider>().t('txt_parcel_senders')),
                 ],
                 onTap: (index) => setState(() => _tabController.index = index),
               ),
@@ -100,15 +106,15 @@ class _ParcelListScreenState extends State<ParcelListScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildDriversList(), // Drivers tab - show trips that accept parcels
-          _buildSendersList(), // Senders tab - show parcel requests
+          _buildDriversList(translate), // Drivers tab - show trips that accept parcels
+          _buildSendersList(translate), // Senders tab - show parcel requests
         ],
       ),
     );
   }
 
   // Drivers Tab - Shows trips that accept parcels (acceptParcel == true)
-  Widget _buildDriversList() {
+  Widget _buildDriversList(TranslateProvider translate) {
     return Consumer<RideListProvide>(
       builder: (context, provider, child) {
         if (provider.isLoadingTrips) {
@@ -121,7 +127,7 @@ class _ParcelListScreenState extends State<ParcelListScreen>
             .toList();
 
         if (parcelAcceptingTrips.isEmpty) {
-          return _buildEmptyState("No drivers accepting parcels", Icons.local_shipping_outlined);
+          return _buildEmptyState("${translate.t('txt_no_driver_accepting')}", Icons.local_shipping_outlined);
         }
 
         return ListView.builder(
@@ -132,19 +138,38 @@ class _ParcelListScreenState extends State<ParcelListScreen>
             return DriverParcelCard(
               trip: trip,
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => OrderDetailScreen(ride: trip,passengers: widget.parcelData['passengers'],
-                      services: widget.parcelData['services'],            bookingType: "1", // parcel booking
+                print( widget.parcelData['passengers']);
+                  // Navigator.push(
+                  //   context,
+                  //   MaterialPageRoute(
+                  //     builder: (_) => OrderDetailScreen(
+                  //       ride: trip,
+                  //       parcelData: widget.parcelData, // <-- Pass the parcel data here
+                  //       bookingType: "1", // parcel booking
+                  //     ),
+                  //   ),
+                  // );
 
-                    ),
-                  ),
-                );
+                // Navigator.push(
+                //   context,
+                //   MaterialPageRoute(
+                //     builder: (_) => OrderDetailScreen(
+                //       ride: trip,
+                //       passengers: widget.parcelData['passengers'] ?? 1,   // Pass number of seats
+                //       services: widget.parcelData['services'] ?? [],      // Pass services if any
+                //       bookingType: "1",                                   // Parcel booking
+                //     ),
+                //   ),
+                // );
+
+
+
+
+
                 // Navigate to parcel booking with this driver
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Book parcel with ${trip.driverName ?? 'Driver'}')),
-                );
+                // ScaffoldMessenger.of(context).showSnackBar(
+                //   SnackBar(content: Text('${translate.t('txt_book_parcel_with')} ${trip.driverName ?? 'Driver'}')),
+                // );
               },
             );
           },
@@ -154,7 +179,7 @@ class _ParcelListScreenState extends State<ParcelListScreen>
   }
 
   // Senders Tab - Shows parcel requests
-  Widget _buildSendersList() {
+  Widget _buildSendersList(TranslateProvider translate) {
     return Consumer<RideListProvide>(
       builder: (context, provider, child) {
         if (provider.isLoadingParcels) {   // ✅ use parcel loading flag
@@ -162,7 +187,7 @@ class _ParcelListScreenState extends State<ParcelListScreen>
         }
 
         if (provider.parcelRequestList.isEmpty) {
-          return _buildEmptyState("No parcel requests", Icons.person_outline);
+          return _buildEmptyState(context.watch<TranslateProvider>().t('txt_no_parcel_request'), Icons.person_outline);
         }
 
         return ListView.builder(
@@ -182,7 +207,7 @@ class _ParcelListScreenState extends State<ParcelListScreen>
                   ),
                 );
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Parcel request from ${request.name ?? 'Sender'}')),
+                  SnackBar(content: Text('${context.watch<TranslateProvider>().t('txt_parcel_request_from')} ${request.name ?? 'Sender'}')),
                 );
               },
             );
@@ -209,7 +234,7 @@ class _ParcelListScreenState extends State<ParcelListScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            "Try adjusting your search criteria",
+            context.watch<TranslateProvider>().t('txt_adjusting_your_search'),
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey.shade500,
@@ -234,6 +259,8 @@ class DriverParcelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final translate = context.watch<TranslateProvider>();
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: InkWell(
@@ -310,6 +337,8 @@ class _DriverInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final translate = context.watch<TranslateProvider>();
+
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: Colors.grey.shade300),
@@ -341,15 +370,15 @@ class _DriverInfo extends StatelessWidget {
                       children: [
                         const Icon(Icons.local_shipping, size: 16, color: Colors.green),
                         const SizedBox(width: 4),
-                        const Text("Accepts Parcels", style: TextStyle(color: Colors.green, fontSize: 12)),
+                        Text(translate.t('txt_accept_parcels'), style: TextStyle(color: Colors.green, fontSize: 12)),
                         const SizedBox(width: 8),
-                        const Icon(Icons.star, color: Colors.yellow, size: 16),
-                        const SizedBox(width: 2),
-                        Text(trip.driverRating ?? "4.8", style: const TextStyle(color: Colors.grey)),
+                        // const Icon(Icons.star, color: Colors.yellow, size: 16),
+                        // const SizedBox(width: 2),
+                        // Text(trip.driverRating ?? "4.8", style: const TextStyle(color: Colors.grey)),
                       ],
                     ),
                     Text(
-                      "Available Seats: ${trip.numberOfSeats ?? 1}",
+                      "${translate.t('txt_available_seats')} ${trip.numberOfSeats ?? 1}",
                       style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                   ],
@@ -358,19 +387,43 @@ class _DriverInfo extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    trip.driverStatus ?? "Active",
-                    style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "\$${trip.price ?? 0}",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.seedPrimary,
-                      fontSize: 16,
-                    ),
-                  ),
+
+                  InkWell(onTap: ()async {
+                    print(trip.driverId);
+
+                    final token = await LocalCache.getToken();
+                    if (token == null || token.isEmpty) {
+                      Fluttertoast.showToast(
+                        msg: context.read<TranslateProvider>().t('txt_login_first'),
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                      );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const PhoneNumberScreen()),
+                      );
+                      return;
+                    }
+
+                    // Use ChatProvider to start chat
+                    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+                    await chatProvider.startChat(
+                      context: context,
+                      otherUserId: trip.driverId!,
+                      userName: trip.driverName ?? 'Driver',
+                    );
+
+
+                  }, child: SvgPicture.asset('assets/images/chat.svg'))
+                  // const SizedBox(height: 4),
+                  // Text(
+                  //   "SM${trip.price ?? 0}",
+                  //   style: const TextStyle(
+                  //     fontWeight: FontWeight.bold,
+                  //     color: AppTheme.seedPrimary,
+                  //     fontSize: 16,
+                  //   ),
+                  // ),
                 ],
               ),
             ],
@@ -413,7 +466,7 @@ class _DriverInfo extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      "Plate No: ${trip.numberPlate ?? 'MP04AB1234'}",
+                      "${translate.t('txt_plate_no')} ${trip.numberPlate ?? 'MP04AB1234'}",
                       style: const TextStyle(fontSize: 14, color: Colors.grey),
                     ),
                   ],
@@ -437,10 +490,46 @@ class _SenderInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        CircleAvatar(
-          radius: 28,
-          backgroundImage: NetworkImage(imageUrl),
+        // CircleAvatar(
+        //   radius: 28,
+        //   backgroundImage: NetworkImage(imageUrl),
+        // ),
+        SizedBox(
+          width: 60,
+          height: 60,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundImage: NetworkImage(imageUrl),
+              ),
+
+              // ✅ Verify badge
+             if(request.idVerified == 0) Positioned(
+                bottom:0,
+                right: -5,
+                child: Container(
+                  width: 25,
+                  height: 25,
+                  decoration: BoxDecoration(
+                    color: Colors.white, // background for contrast
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  padding: const EdgeInsets.all(2),
+                  child: ClipOval(
+                    child: Image.asset(
+                      "assets/images/verify_user.png",
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
+
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -451,11 +540,11 @@ class _SenderInfo extends StatelessWidget {
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               Text(
-                "Parcel Type: ${request.parcelDetails ?? 'Medium'}",
+                "${context.watch<TranslateProvider>().t('txt_parcel_type')} ${request.parcelDetails ?? 'Medium'}",
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
               Text(
-                "Contact: ${request.phoneNumber ?? 'N/A'}",
+                "${context.watch<TranslateProvider>().t('txt_contact')} ${request.phoneNumber ?? 'N/A'}",
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
             ],
@@ -488,6 +577,8 @@ class _ParcelRideLocations extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final translate = context.watch<TranslateProvider>();
+
     return Container(
       height: 130,
       decoration: BoxDecoration(
@@ -500,7 +591,10 @@ class _ParcelRideLocations extends StatelessWidget {
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset("assets/images/red_icon.png", height: 15),
+              SvgPicture.asset(
+                "assets/images/red_icon.svg",
+                height: 15,
+              ),
               const SizedBox(height: 4),
               const DottedLine(
                 dashLength: 3,
@@ -511,8 +605,10 @@ class _ParcelRideLocations extends StatelessWidget {
                 lineLength: 40,
               ),
               const SizedBox(height: 4),
-              Image.asset("assets/images/blue_icon.png", height: 15),
-            ],
+              SvgPicture.asset(
+                "assets/images/blue_icon.svg",
+                height: 15,
+              ),            ],
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -559,8 +655,10 @@ class _SenderParcelLocations extends StatelessWidget {
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset("assets/images/red_icon.png", height: 15),
-              const SizedBox(height: 4),
+              SvgPicture.asset(
+                "assets/images/red_icon.svg",
+                height: 15,
+              ),              const SizedBox(height: 4),
               const DottedLine(
                 dashLength: 3,
                 dashGapLength: 3,
@@ -570,8 +668,10 @@ class _SenderParcelLocations extends StatelessWidget {
                 lineLength: 40,
               ),
               const SizedBox(height: 4),
-              Image.asset("assets/images/blue_icon.png", height: 15),
-            ],
+              SvgPicture.asset(
+                "assets/images/blue_icon.svg",
+                height: 15,
+              ),            ],
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -606,15 +706,17 @@ class _ParcelDateTime extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final translate = context.watch<TranslateProvider>();
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          "Date: ${trip.rideDate ?? '21 Sep 2025'}",
+          "${translate.t('txt_parcel_date')} ${trip.rideDate ?? '21 Sep 2025'}",
           style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
         Text(
-          "Time: ${trip.rideTime ?? '10:45 AM'}",
+          "${translate.t('txt_parcel_time')} ${trip.rideTime ?? '10:45 AM'}",
           style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
       ],
@@ -633,11 +735,11 @@ class _SenderParcelDateTime extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          "Date: ${request.rideDate ?? '21 Sep 2025'}",
+          "${context.watch<TranslateProvider>().t('txt_parcel_date')} ${request.rideDate ?? '21 Sep 2025'}",
           style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
         Text(
-          "Time: ${request.rideTime ?? '10:45 AM'}",
+          "${context.watch<TranslateProvider>().t('txt_parcel_time')} ${request.rideTime ?? '10:45 AM'}",
           style: const TextStyle(fontSize: 12, color: Colors.grey),
         ),
       ],

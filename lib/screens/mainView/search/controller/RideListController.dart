@@ -39,49 +39,6 @@ class RideListProvide extends ChangeNotifier {
   final App_Constructor appConstructor = App_Constructor();
   final Api_Service apiService = Api_Service();
 
-  // Future<void> fetchTripList(
-  //     String pickup,
-  //     String destination,
-  //     String date,
-  //     int seats,
-  //     ) async {
-  //   _isLoadingTrips = true; // Fixed: should be true, not false
-  //   notifyListeners();
-  //
-  //   try {
-  //     final url = Uri.parse(
-  //       '${appConstructor.BaseURL}${appConstructor.fetchtripridelist}'
-  //           '?pickup_location=$pickup&destination=$destination&ride_date=$date&number_of_seats=$seats',
-  //
-  //     );
-  //
-  //     final response = await http.get(url);
-  //
-  //     debugPrint("Trip List API URL: $url");
-  //     debugPrint("Trip List Response: ${response.statusCode}");
-  //
-  //     if (response.statusCode == 200) {
-  //       final data = json.decode(response.body);
-  //       if (data['status'] == true) {
-  //         RideList rideListResponse = RideList.fromJson(data);
-  //         _tripList = rideListResponse.data ?? [];
-  //         debugPrint("✅ Loaded ${_tripList.length} trips");
-  //       } else {
-  //         _tripList = [];
-  //         debugPrint("❌ Trip List API Error: ${data['message']}");
-  //       }
-  //     } else {
-  //       _tripList = [];
-  //       debugPrint("❌ Trip List HTTP Error: ${response.statusCode}");
-  //     }
-  //   } catch (e) {
-  //     debugPrint("❌ Error fetching trips: $e");
-  //     _tripList = [];
-  //   }
-  //
-  //   _isLoadingTrips = false; // Complete the method
-  //   notifyListeners();
-  // }
   Future<void> fetchTripList(
       String pickup,
       String destination,
@@ -251,7 +208,12 @@ class RideListProvide extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['status'] == true) {
-          _driverData = data['data'];
+          final driverList = data['data'];
+          if (driverList is List && driverList.isNotEmpty) {
+            _driverData = driverList[0]; // ✅ take first element
+          } else {
+            _driverData = null;
+          }
         } else {
           _driverData = null;
           debugPrint("Driver Detail API Error: ${data['message']}");
@@ -268,6 +230,7 @@ class RideListProvide extends ChangeNotifier {
     _isLoadingTrips = false;
     notifyListeners();
   }
+
 
   // Method to refresh both lists
   Future<void> refreshAllData(

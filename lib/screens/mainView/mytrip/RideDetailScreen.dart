@@ -1,11 +1,15 @@
 import 'dart:convert';
+import 'package:bla_bla_car/providers/translate_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+// import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:dotted_line/dotted_line.dart';
+import 'package:provider/provider.dart';
 import '../../../service/colors.dart';
 import '../../../service/local_cache.dart';
-import '../create /DriverProfileScreen.dart';
+import '../create/DriverProfileScreen.dart';
 
 class RideDetailScreen extends StatefulWidget {
   final int rideId; // 👈 pass from previous screen
@@ -164,7 +168,7 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Ride Details"),
+        title: Text(context.watch<TranslateProvider>().t('txt_ride_details')),
         backgroundColor: AppTheme.seedPrimary,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -180,8 +184,8 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
           children: [
             // _buildRideSummaryCard(),
             const SizedBox(height: 20),
-            const Text(
-              "Interested Drivers",
+            Text(
+              context.watch<TranslateProvider>().t('txt_interested_drivers'),
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -195,13 +199,13 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 50),
-                const Text(
-                  "No drivers found",
+                Text(
+                  context.watch<TranslateProvider>().t('txt_no_drivers_found'),
                   style: TextStyle(fontSize: 16, color: Colors.grey, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  "Please try refreshing or check back later.",
+                Text(
+                  context.watch<TranslateProvider>().t('txt_refresh_list'),
                   style: TextStyle(fontSize: 14, color: Colors.grey),
                   textAlign: TextAlign.center,
                 ),
@@ -211,7 +215,7 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
                     // Refresh or retry logic
                     Navigator.pop(context);
                   },
-                  child: const Text("Retry"),
+                  child: Text(context.watch<TranslateProvider>().t('txt_retry')),
                 ),
                 // Add any other content here
               ],
@@ -239,7 +243,7 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
           Icon(Icons.directions_car_outlined, size: 80, color: Colors.grey.shade400),
           const SizedBox(height: 16),
           Text(
-            "No ride details found",
+            context.watch<TranslateProvider>().t('txt_no_ride_details'),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -248,7 +252,7 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            "Please try again later",
+            context.watch<TranslateProvider>().t('txt_please_try_again'),
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey.shade500,
@@ -304,7 +308,7 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
                 Expanded(
                   child: _buildDetailItem(
                     Icons.event,
-                    "Date",
+                    context.watch<TranslateProvider>().t('txt_date'),
                     _rideInfo!['ride_date'] ?? 'N/A',
                   ),
                 ),
@@ -312,7 +316,7 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
                   Expanded(
                     child: _buildDetailItem(
                       Icons.access_time,
-                      "Time",
+                      context.watch<TranslateProvider>().t('txt_ride_status_time'),
                       _rideInfo!['ride_time'],
                     ),
                   ),
@@ -324,7 +328,7 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
                 Expanded(
                   child: _buildDetailItem(
                     Icons.event_seat,
-                    "Seats",
+                    context.watch<TranslateProvider>().t('txt_ride_status_seats'),
                     "${_rideInfo!['number_of_seats'] ?? 'N/A'}",
                   ),
                 ),
@@ -332,8 +336,8 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
                   Expanded(
                     child: _buildDetailItem(
                       Icons.attach_money,
-                      "Price",
-                      "\$${_rideInfo!['price']}",
+                      context.watch<TranslateProvider>().t('txt_price'),
+                      "c ${_rideInfo!['price']}",
                       valueColor: AppTheme.seedPrimary,
                     ),
                   ),
@@ -353,8 +357,8 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset(
-                "assets/images/blue_icon.png",
+              SvgPicture.asset(
+                "assets/images/blue_icon.svg",
                 height: 16,
               ),
               const SizedBox(height: 4),
@@ -367,8 +371,8 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
                 lineLength: 35,
               ),
               const SizedBox(height: 4),
-              Image.asset(
-                "assets/images/red_icon.png",
+              SvgPicture.asset(
+                "assets/images/red_icon.svg",
                 height: 16,
               ),
             ],
@@ -380,7 +384,7 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _rideInfo!['pickup_location'] ?? "Pickup Location",
+                  _rideInfo!['pickup_location'] ?? context.watch<TranslateProvider>().t('txt_pickup_location'),
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
@@ -391,7 +395,7 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  _rideInfo!['destination'] ?? "Destination",
+                  _rideInfo!['destination'] ?? context.watch<TranslateProvider>().t('txt_destination'),
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
@@ -525,7 +529,7 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
                           const SizedBox(height: 4),
                           // 🔍 Show driver ID for debugging
                           Text(
-                            "ID: $driverId",
+                            "${context.watch<TranslateProvider>().t('txt_ride_id')} $driverId",
                             style: const TextStyle(
                               color: Colors.orange,
                               fontSize: 10,
@@ -605,7 +609,7 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
                               ),
                             if (driver['number_plate'] != null)
                               Text(
-                                "Plate: ${driver['number_plate']}",
+                                "${context.watch<TranslateProvider>().t('txt_plate')} ${driver['number_plate']}",
                                 style: const TextStyle(
                                   color: Colors.grey,
                                   fontSize: 12,
@@ -641,8 +645,8 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
                         driverId: driverId.toString(),      // ✅ use our helper method
                       );
                     },
-                    child: const Text(
-                      "Accept Request",
+                    child: Text(
+                      context.watch<TranslateProvider>().t('txt_accept_request'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,

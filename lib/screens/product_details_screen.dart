@@ -80,7 +80,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          '\$${widget.product.price.toStringAsFixed(2)}',
+                          'c ${widget.product.price.toStringAsFixed(2)}',
                           style: tt.headlineMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: cs.primary,
@@ -252,7 +252,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 elevation: 0,
               ),
               child: Text(
-                'Add to Cart - \$${(widget.product.price * quantity).toStringAsFixed(2)}',
+                'Add to Cart - c ${(widget.product.price * quantity).toStringAsFixed(2)}',
                 style: tt.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),

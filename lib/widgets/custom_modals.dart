@@ -194,7 +194,7 @@ class _CheckoutModalState extends State<CheckoutModal> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text('Items (${cart.itemCount}):'),
-                                Text('\$${cart.totalAmount.toStringAsFixed(2)}'),
+                                Text('c ${cart.totalAmount.toStringAsFixed(2)}'),
                               ],
                             ),
                             const Divider(),
@@ -209,7 +209,7 @@ class _CheckoutModalState extends State<CheckoutModal> {
                                   ),
                                 ),
                                 Text(
-                                  '\$${cart.totalAmount.toStringAsFixed(2)}',
+                                  'c ${cart.totalAmount.toStringAsFixed(2)}',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Color(0xFF1976D2),

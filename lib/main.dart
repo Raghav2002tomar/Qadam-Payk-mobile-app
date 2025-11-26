@@ -64,7 +64,8 @@ import 'package:bla_bla_car/providers/theme_provider.dart';
 import 'package:bla_bla_car/providers/translate_provider.dart' show TranslateProvider;
 import 'package:bla_bla_car/screens/auth/controller/auth_provider.dart' show LoginProvider;
 import 'package:bla_bla_car/screens/mainView/HomeShell.dart';
-import 'package:bla_bla_car/screens/mainView/create%20/cantroller/passenger_request_provider.dart';
+import 'package:bla_bla_car/screens/mainView/create/cantroller/passenger_request_provider.dart';
+import 'package:bla_bla_car/screens/mainView/provide/ChatProvider.dart';
 import 'package:bla_bla_car/screens/mainView/search/controller/RideListController.dart';
 import 'package:bla_bla_car/screens/mainView/search/controller/search_provoder.dart';
 import 'package:bla_bla_car/screens/onboarding/OnBoardingScreen.dart';
@@ -72,7 +73,10 @@ import 'package:bla_bla_car/service/colors.dart';
 import 'package:bla_bla_car/service/local_cache.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+// import 'package:firebase_core/firebase_core.dart';
+// import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/adapters.dart';
@@ -80,6 +84,8 @@ import 'package:provider/provider.dart';
 
 
 import 'notification_handler.dart';
+final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -98,6 +104,9 @@ void main() async {
   await translateProvider.init();
 
   final seenOnboarding = await LocalCache.isOnboardingSeen();
+  if (kReleaseMode) {
+    debugPrint = (String? message, {int? wrapWidth}) {};
+  }
 
   runApp(
     MultiProvider(
@@ -110,6 +119,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => SearchProvider()),
         ChangeNotifierProvider(create: (_) => PassengerRequestProvider()),
         ChangeNotifierProvider(create: (_) => RideListProvide()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
       child: MyApp(seenOnboarding: seenOnboarding),
     ),
@@ -131,13 +141,16 @@ class MyApp extends StatelessWidget {
     final locale = context.watch<TranslateProvider>().locale;
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'ShopEase Professional',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: mode,
       locale: Locale(locale),
-      home: seenOnboarding ? const HomeShell() : const OnboardingScreen(),
+      navigatorObservers: [routeObserver],
+      // home: seenOnboarding ? const HomeShell() : const OnboardingScreen(),
+      home:  HomeShell() ,
     );
   }
 }

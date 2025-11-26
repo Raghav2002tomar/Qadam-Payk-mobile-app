@@ -1,16 +1,23 @@
 // lib/screens/passenger_order_detail_screen.dart
 import 'dart:convert';
 
+import 'package:bla_bla_car/providers/translate_provider.dart';
 import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
 import '../../../api_service/api_serviece.dart';
 import '../../../api_service/app_constocter.dart';
 import '../../../service/local_cache.dart';
-import '../create /DriverProfileScreen.dart';
+import '../../auth/SignInScreen.dart';
+import '../ProfileScreen/ViewResponceScreen.dart';
+import '../create/DriverProfileScreen.dart';
+import '../provide/ChatProvider.dart';
 import '../search/model/ride_model.dart';
 
 class PassengerOrderDetailScreen extends StatelessWidget {
@@ -49,9 +56,15 @@ class PassengerOrderDetailScreen extends StatelessWidget {
 
         if (data['status'] == true) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("✅ Interest request sent successfully")),
+            SnackBar(content: Text(context.read<TranslateProvider>().t('txt_interest_request_sent_success'))),
           );
-          Navigator.pop(context);
+          // Navigator.pop(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const Viewresponcescreen(initialTabIndex: 1), // Opens 2nd tab directly
+            ),
+          );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("⚠️ ${data['message']}")),
@@ -59,13 +72,13 @@ class PassengerOrderDetailScreen extends StatelessWidget {
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("❌ Error: ${response.statusCode}")),
+          SnackBar(content: Text("${context.read<TranslateProvider>().t('txt_error')} ${response.statusCode}")),
         );
       }
     } catch (e) {
       debugPrint("❌ API Error: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("⚠️ Failed to send request")),
+        SnackBar(content: Text(context.read<TranslateProvider>().t('txt_failed_to_send'))),
       );
     }
   }
@@ -110,14 +123,44 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                     decoration: _cardDecoration(),
                     child: Row(
                       children: [
-                        CircleAvatar(
-                          radius: 30,
-                          backgroundImage: NetworkImage(
-                            request.image != null
-                                ? "https://qadampayk.com/assets/profile_image/${request.image}"
-                                : "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDI0LTAxL3Jhd3BpeGVsb2ZmaWNlMTFfcGhvdG9fb2ZfYWZyaWNhbl9hbWVyaWNhbl9tYW5faW5fYnVzaW5lc3Nfc3VpdF9iYmEzZjA3MS1iN2JkLTQ3MjctODA4MC1hYjJmOTIxOGY1OTMucG5n.png",
+                        SizedBox(
+                          width: 65,
+                          height: 65,
+                          child: Stack(
+                            clipBehavior: Clip.none, // allows badge to overflow
+                            children: [
+                              // Main profile image
+                              CircleAvatar(
+                                radius: 30,
+                                backgroundImage: NetworkImage(
+                                  request.image != null
+                                      ? "https://qadampayk.com/assets/profile_image/${request.image}"
+                                      : "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDI0LTAxL3Jhd3BpeGVsb2ZmaWNlMTFfcGhvdG9fb2ZfYWZyaWNhbl9hbWVyaWNhbl9tYW5faW5fYnVzaW5lc3Nfc3VpdF9iYmEzZjA3MS1iN2JkLTQ3MjctODA4MC1hYjJmOTIxOGY1OTMucG5n.png",
+                                ),
+                              ),
+
+                              // Verify badge
+                              if (request.idVerified.toString() == "1")
+                                Positioned(
+                                  bottom: -4,
+                                  right: -4,
+                                  child: Container(
+                                    padding: EdgeInsets.all(2), // white border
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white, // background for contrast
+                                    ),
+                                    child: Image.asset(
+                                      "assets/images/verify_user.png",
+                                      height: 22,
+                                      width: 22,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
+
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
@@ -133,7 +176,7 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                "Seats: ${request.numberOfSeats ?? 1}",
+                                "${context.watch<TranslateProvider>().t('txt_seats')} ${request.numberOfSeats ?? 1}",
                                 style: GoogleFonts.inter(
                                   fontSize: 14,
                                   color: const Color(0xFF666666),
@@ -180,8 +223,8 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                       children: [
                         Column(
                           children: [
-                            Image.asset(
-                              "assets/images/red_icon.png",
+                            SvgPicture.asset(
+                              "assets/images/red_icon.svg",
                               height: 16,
                             ),
                             const SizedBox(height: 6),
@@ -194,8 +237,8 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                               lineLength: 40,
                             ),
                             const SizedBox(height: 6),
-                            Image.asset(
-                              "assets/images/blue_icon.png",
+                            SvgPicture.asset(
+                              "assets/images/blue_icon.svg",
                               height: 16,
                             ),
                           ],
@@ -206,7 +249,7 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                request.pickupLocation ?? "Pickup Location",
+                                request.pickupLocation ?? context.watch<TranslateProvider>().t('txt_pickup_location'),
                                 style: GoogleFonts.inter(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
@@ -217,7 +260,7 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                               dottedDivider(),
                               const SizedBox(height: 16),
                               Text(
-                                request.destination ?? "Destination",
+                                request.destination ?? context.watch<TranslateProvider>().t('txt_destination'),
                                 style: GoogleFonts.inter(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
@@ -241,7 +284,7 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${request.numberOfSeats ?? 1} passenger(s)',
+                          '${request.numberOfSeats ?? 1} ${context.watch<TranslateProvider>().t('txt_passengers')}(s)',
                           style: GoogleFonts.inter(
                             fontSize: 15,
                             color: const Color(0xFF666666),
@@ -280,24 +323,25 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                                       'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
                                 ),
                               ),
-                              Positioned(
+                            if(request.idVerified =="1")  Positioned(
                                 bottom: 0,
                                 right: 0,
                                 child: Container(
-                                  width: 20,
-                                  height: 20,
+                                  width: 22,
+                                  height: 22,
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF008955),
+                                    color: Colors.white, // 👈 white background border
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                       color: Colors.white,
                                       width: 2,
                                     ),
                                   ),
-                                  child: const Icon(
-                                    Icons.check,
-                                    size: 12,
-                                    color: Colors.white,
+                                  child: ClipOval(
+                                    child: Image.asset(
+                                      "assets/images/verify_user.png",
+                                      fit: BoxFit.cover,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -326,7 +370,7 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      '13/5 - ratings',
+                                      '13/5 - ${context.watch<TranslateProvider>().t('txt_ratings')}',
                                       style: GoogleFonts.inter(
                                         fontSize: 14,
                                         color: const Color(0xFF666666),
@@ -366,7 +410,7 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Parcel Details',
+                            context.watch<TranslateProvider>().t('txt_parcel_details'),
                             style: GoogleFonts.inter(
                               fontSize: 17,
                               fontWeight: FontWeight.w600,
@@ -393,7 +437,7 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                               request.dropContactName != null) ...[
                             if (request.pickupContactName != null)
                               Text(
-                                "Pickup Contact: ${request.pickupContactName} ",
+                                "${context.watch<TranslateProvider>().t('txt_pickup_contact')}: ${request.pickupContactName} ",
                                 style: GoogleFonts.inter(
                                   fontSize: 14,
                                   color: Colors.grey[700],
@@ -401,7 +445,7 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                               ),
                             if (request.dropContactName != null)
                               Text(
-                                "Drop Contact: ${request.dropContactName} ",
+                                "${context.watch<TranslateProvider>().t('txt_drop_contact')}: ${request.dropContactName} ",
                                 style: GoogleFonts.inter(
                                   fontSize: 14,
                                   color: Colors.grey[700],
@@ -413,8 +457,8 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                           // Parcel Images
                           if (request.parcelImages != null &&
                               request.parcelImages!.isNotEmpty) ...[
-                            const Text(
-                              "Parcel Images:",
+                             Text(
+                              context.watch<TranslateProvider>().t('txt_parcel_iamges'),
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 15,
@@ -468,15 +512,15 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                       children: [
                         _buildFeatureItem(
                           Icons.verified_user,
-                          'Verified Profile',
+                          context.watch<TranslateProvider>().t('txt_verified_profile'),
                         ),
                         _buildFeatureItem(
                           Icons.event_busy,
-                          'Rarely cancels rides',
+                          context.watch<TranslateProvider>().t('txt_rarely_cancel_rides'),
                         ),
                         _buildFeatureItem(
                           Icons.flash_on,
-                          'Instant booking confirmation',
+                          context.watch<TranslateProvider>().t('txt_instant_confirmation'),
                         ),
                         // _buildFeatureItem(Icons.directions_car, request.brand ?? 'Car Info'),
                       ],
@@ -486,8 +530,32 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                   const SizedBox(height: 24),
 
                   // Contact Button
+// Replace your existing OutlinedButton.icon
                   OutlinedButton.icon(
-                    onPressed: () {},
+                    onPressed: () async {
+
+                      final token = await LocalCache.getToken();
+                      if (token == null || token.isEmpty) {
+                        Fluttertoast.showToast(
+                          msg: context.read<TranslateProvider>().t('txt_login_first'),
+                          backgroundColor: Colors.red,
+                          textColor: Colors.white,
+                        );
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const PhoneNumberScreen()),
+                        );
+                        return;
+                      }
+                      // Use ChatProvider to start chat
+                      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+                      await chatProvider.startChat(
+                        context: context,
+                        otherUserId: request.userId!, // <-- crash happens if driverId is null
+                        userName: request.displayName ?? 'Driver',
+                      );
+
+                    },
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Color(0xFF008955)),
                       shape: RoundedRectangleBorder(
@@ -495,12 +563,9 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                       ),
                       minimumSize: const Size(double.infinity, 48),
                     ),
-                    icon: const Icon(
-                      Icons.chat_bubble_outline,
-                      color: Color(0xFF008955),
-                    ),
+                    icon: const Icon(Icons.chat_bubble_outline, color: Color(0xFF008955)),
                     label: Text(
-                      'Contact ${request.displayName ?? "Driver"}',
+                      '${context.watch<TranslateProvider>().t('txt_parcel_contact')} ${request.displayName ?? ''}',
                       style: GoogleFonts.inter(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -533,7 +598,7 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                 ),
                 icon: const Icon(Icons.flash_on, color: Colors.white),
                 label: Text(
-                  'Book / Accept',
+                  context.watch<TranslateProvider>().t('txt_book_or_accept'),
                   style: GoogleFonts.inter(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,

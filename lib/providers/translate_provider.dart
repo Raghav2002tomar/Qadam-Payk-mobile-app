@@ -6,13 +6,13 @@ class TranslateProvider with ChangeNotifier {
   static const _boxName = 'settings';
   static const _localeKey = 'locale';
 
-  String _locale = 'en'; // default English
+  String _locale = 'ru'; // default English
 
   String get locale => _locale;
 
   Future<void> init() async {
     final box = await Hive.openBox(_boxName);
-    final savedLocale = box.get(_localeKey, defaultValue: 'en');
+    final savedLocale = box.get(_localeKey, defaultValue: 'ru');
     _locale = savedLocale;
     notifyListeners();
   }

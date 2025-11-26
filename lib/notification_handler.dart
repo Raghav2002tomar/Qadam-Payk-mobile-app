@@ -1,110 +1,15 @@
-// import 'dart:async';
-// import 'package:firebase_messaging/firebase_messaging.dart';
-// import 'package:flutter/material.dart';
-// import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-//
-// class NotificationHandler {
-//   static final NotificationHandler _instance = NotificationHandler._internal();
-//   factory NotificationHandler() => _instance;
-//
-//   NotificationHandler._internal();
-//
-//   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
-//   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
-//   FlutterLocalNotificationsPlugin();
-//
-//   Future<void> init(BuildContext context) async {
-//     // Request permissions (iOS)
-//
-//      await _firebaseMessaging.requestPermission();
-//     // await _firebaseMessaging.requestPermission(
-//     //   alert: true,
-//     //   badge: true,
-//     //   sound: true,
-//     // );
-//
-//
-//     // Initialize local notifications
-//     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-//     const iOSInit = DarwinInitializationSettings();
-//     const initSettings =
-//     InitializationSettings(android: androidInit, iOS: iOSInit);
-//     await _flutterLocalNotificationsPlugin.initialize(initSettings,
-//         onDidReceiveNotificationResponse: (details) {
-//           // When user taps on notification
-//           _handleNotificationClick(context, details.payload);
-//         });
-//
-//     // Get the FCM token (for backend registration)
-//     String? token = await _firebaseMessaging.getToken();
-//     debugPrint("🔑 FCM Token: $token");
-//
-//     // Foreground messages
-//     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-//       debugPrint("📩 Foreground message: ${message.notification?.title}");
-//       _showLocalNotification(message);
-//     });
-//
-//     // Background messages (tapped notification when app is in background)
-//     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-//       debugPrint("📲 App opened from background notification");
-//       _handleNotificationClick(context, message.data['route']);
-//     });
-//
-//     // When app is launched by tapping a notification (cold start)
-//     RemoteMessage? initialMessage =
-//     await FirebaseMessaging.instance.getInitialMessage();
-//     if (initialMessage != null) {
-//       _handleNotificationClick(context, initialMessage.data['route']);
-//     }
-//   }
-//
-//   Future<void> _showLocalNotification(RemoteMessage message) async {
-//     final notification = message.notification;
-//     if (notification == null) return;
-//
-//     const androidDetails = AndroidNotificationDetails(
-//       'default_channel',
-//       'General Notifications',
-//       channelDescription: 'This channel is used for app notifications',
-//       importance: Importance.high,
-//       priority: Priority.high,
-//       playSound: true,
-//     );
-//     const iOSDetails = DarwinNotificationDetails();
-//
-//     const platformDetails =
-//     NotificationDetails(android: androidDetails, iOS: iOSDetails);
-//
-//     await _flutterLocalNotificationsPlugin.show(
-//       notification.hashCode,
-//       notification.title,
-//       notification.body,
-//       platformDetails,
-//       payload: message.data['route'], // You can send a custom route from backend
-//     );
-//   }
-//
-//   void _handleNotificationClick(BuildContext context, String? route) {
-//     if (route != null && route.isNotEmpty) {
-//       // Example navigation: You can map routes to screens
-//       Navigator.pushNamed(context, route);
-//     }
-//   }
-// }
-//
-// // Background message handler must be a top-level function
-// Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-//   debugPrint("📥 Background message received: ${message.messageId}");
-// }
 
 
 import 'dart:async';
+import 'package:bla_bla_car/screens/mainView/ProfileScreen/ViewResponceScreen.dart';
+import 'package:bla_bla_car/screens/mainView/chat/ChatListScreen.dart';
+import 'package:bla_bla_car/screens/mainView/mytrip/InterestedPassengersScreen.dart';
 import 'package:bla_bla_car/services/api_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import '../service/local_cache.dart'; // 👈 Import your LocalCache
+import '../service/local_cache.dart';
+import 'main.dart'; // 👈 Import your LocalCache
 
 class NotificationHandler {
   static final NotificationHandler _instance = NotificationHandler._internal();
@@ -143,21 +48,79 @@ class NotificationHandler {
 
     // 📩 Foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint("📩 Foreground message: ${message.notification?.title}");
+      debugPrint("----------- 🔥 FULL FCM MESSAGE (FOREGROUND) ------------");
+      debugPrint("ID: ${message.messageId}");
+      debugPrint("Title: ${message.notification?.title}");
+      debugPrint("Body: ${message.notification?.body}");
+      debugPrint("Data: ${message.data}");
+      debugPrint("Sender ID: ${message.senderId}");
+      debugPrint("Collapse Key: ${message.collapseKey}");
+      debugPrint("Category: ${message.category}");
+      debugPrint("Thread ID: ${message.threadId}");
+      debugPrint("---------------------------------------------------------");
       _showLocalNotification(message);
     });
 
     // 📲 When notification is tapped (app in background)
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint("📲 App opened from background notification");
-      _handleNotificationClick(context, message.data['route']);
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message)async {
+      debugPrint("----------- 🚀 OPENED FROM NOTIFICATION ------------");
+      debugPrint("Route: ${message.data['route']}");
+      debugPrint("Full Data: ${message.data}");
+      debugPrint("----------------------------------------------------");
+      // _handleNotificationClick(context, message.data['route']);
+      RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+      if (initialMessage != null) {
+        _openInterestedPassenger(context, initialMessage.data);
+      }
+      Future.delayed(const Duration(seconds: 2), () {
+        print('One second has passed.'); // Prints after 1 second.
+        _openInterestedPassenger(context, message.data);
+      });
+
     });
 
-    // 🚀 App launched by tapping a notification (cold start)
-    RemoteMessage? initialMessage =
-    await FirebaseMessaging.instance.getInitialMessage();
+    // 🚀 App launched from terminated state by tapping notification
+    RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
     if (initialMessage != null) {
-      _handleNotificationClick(context, initialMessage.data['route']);
+      debugPrint("🚀 App launched by tapping notification (COLD START)");
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _openInterestedPassenger(context, initialMessage.data);
+      });
+    }
+
+  }
+
+  void _openInterestedPassenger(BuildContext context, Map<String, dynamic> data) {
+    final type = data['notification_type']?.toString() ?? "";
+
+    debugPrint("🔔 Notification Type: $type");
+    debugPrint("📦 Data: $data");
+
+    if (type == "4") {
+      // → Go to Response screen
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (_) => Viewresponcescreen(initialTabIndex: 0),
+        ),
+      );
+    } else if (type == "3") {
+      // → Go to Chat screen
+      final chatId = data['chat_id']?.toString() ?? "";
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (_) => Chatlistscreen(), // <-- adjust to your chat page
+        ),
+      );
+    }
+
+    else if (type == "2") {
+      // → Go to Chat screen
+      final chatId = data['chat_id']?.toString() ?? "";
+      navigatorKey.currentState?.push(
+        MaterialPageRoute(
+          builder: (_) => Chatlistscreen(), // <-- adjust to your chat page
+        ),
+      );
     }
   }
 
@@ -195,18 +158,25 @@ class NotificationHandler {
       notification.title,
       notification.body,
       platformDetails,
-      payload: message.data['route'],
+      payload: message.data['notification_type'] ?? "",
     );
   }
 
-  void _handleNotificationClick(BuildContext context, String? route) {
-    if (route != null && route.isNotEmpty) {
-      Navigator.pushNamed(context, route);
-    }
+  void _handleNotificationClick(BuildContext context, String? payload) {
+    if (payload == null || payload.isEmpty) return;
+
+    final Map<String, dynamic> data = {"notification_type": payload};
+    _openInterestedPassenger(context, data);
+
   }
+
 }
 
 // Background message handler must be a top-level function
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint("📥 Background message received: ${message.messageId}");
-}
+  debugPrint("----------- 🌙 FULL FCM MESSAGE (BACKGROUND) ------------");
+  debugPrint("ID: ${message.messageId}");
+  debugPrint("Title: ${message.notification?.title}");
+  debugPrint("Body: ${message.notification?.body}");
+  debugPrint("Data: ${message.data}");
+  debugPrint("---------------------------------------------------------");}

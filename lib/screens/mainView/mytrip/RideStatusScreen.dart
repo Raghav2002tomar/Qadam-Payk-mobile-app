@@ -3,9 +3,11 @@ import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import '../../../providers/translate_provider.dart';
 import '../../../service/colors.dart';
 import '../../../service/local_cache.dart';
-import '../create /OrderDetailScreen.dart';
+import '../create/OrderDetailScreen.dart';
 import 'RideDetailScreen.dart';
 import 'model/passenger_request_model.dart';
 
@@ -95,12 +97,13 @@ class _RideStatusScreenState extends State<RideStatusScreen>
   }
   @override
   Widget build(BuildContext context) {
+    final translate = context.watch<TranslateProvider>();
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
-          title: const Text("Rides & Bookings"),
+          title:  Text("${translate.t('txt_rides_and_bookings')}"),
           backgroundColor: Colors.transparent,
           elevation: 0,
           bottom: PreferredSize(
@@ -123,9 +126,9 @@ class _RideStatusScreenState extends State<RideStatusScreen>
                 labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                 unselectedLabelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.normal),
                 labelPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 1), // Extra gap
-                tabs: const [
-                  Tab(text: "My Requests"),
-                  Tab(text: "My Booking"),
+                tabs:  [
+                  Tab(text: "${translate.t('txt_my_requests')}"),
+                  Tab(text: "${translate.t('txt_my_bookings')}"),
                 ],
               ),
             ),
@@ -135,8 +138,8 @@ class _RideStatusScreenState extends State<RideStatusScreen>
         body: TabBarView(
           controller: _parentTabController,
           children: [
-            _buildChildTabView(_requestChildTabController, _requests, _isLoadingRequests),
-            _buildChildTabView(_bookingChildTabController, _bookings, _isLoadingBookings),
+            _buildChildTabView(_requestChildTabController, _requests, _isLoadingRequests , translate),
+            _buildChildTabView(_bookingChildTabController, _bookings, _isLoadingBookings, translate),
           ],
         ),
       ),
@@ -144,7 +147,7 @@ class _RideStatusScreenState extends State<RideStatusScreen>
   }
 
 
-  Widget _buildChildTabView(TabController tabController, List<PassengerRequest> list, bool isLoading) {
+  Widget _buildChildTabView(TabController tabController, List<PassengerRequest> list, bool isLoading, TranslateProvider translate) {
     return Column(
       children: [
        TabBar(
@@ -159,10 +162,10 @@ class _RideStatusScreenState extends State<RideStatusScreen>
           unselectedLabelColor: Colors.grey.shade500, // Unselected tab text color
           labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
           unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
-          tabs: const [
-            Tab(text: 'Pending'),
-            Tab(text: 'Completed'),
-            Tab(text: 'Cancelled'),
+          tabs:  [
+            Tab(text: '${translate.t('txt_pending')}'),
+            Tab(text: '${translate.t('txt_completed')}'),
+            Tab(text: '${translate.t('txt_cancelled')}'),
           ],
           onTap: (index) => setState(() => tabController.index = index),
         ),
@@ -174,9 +177,9 @@ class _RideStatusScreenState extends State<RideStatusScreen>
               : TabBarView(
             controller: tabController,
             children: [
-              _buildRideListByStatus(list, "pending"),
-              _buildRideListByStatus(list, "completed"),
-              _buildRideListByStatus(list, "cancelled"),
+              _buildRideListByStatus(list, "pending", translate),
+              _buildRideListByStatus(list, "completed",translate),
+              _buildRideListByStatus(list, "cancelled",translate),
             ],
           ),
         ),
@@ -184,7 +187,7 @@ class _RideStatusScreenState extends State<RideStatusScreen>
     );
   }
 
-  Widget _buildRideListByStatus(List<PassengerRequest> list, String status) {
+  Widget _buildRideListByStatus(List<PassengerRequest> list, String status, TranslateProvider translate) {
     final filtered = list.where((r) {
       switch (status) {
         case "pending":
@@ -199,8 +202,24 @@ class _RideStatusScreenState extends State<RideStatusScreen>
     }).toList();
 
     if (filtered.isEmpty) {
+      // Translate status
+      String translatedStatus;
+      switch (status) {
+        case "pending":
+          translatedStatus = translate.t('txt_pending');
+          break;
+        case "completed":
+          translatedStatus = translate.t('txt_completed');
+          break;
+        case "cancelled":
+          translatedStatus = translate.t('txt_cancelled');
+          break;
+        default:
+          translatedStatus = status;
+      }
+
       return Center(
-        child: Text("No $status rides"),
+        child: Text(translate.t('txt_no_ride_details', )),
       );
     }
 
@@ -222,6 +241,8 @@ class PassengerRideCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final translate = context.watch<TranslateProvider>();
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: InkWell(
@@ -258,7 +279,7 @@ class PassengerRideCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    _buildStatusBadge(ride.status),
+                    _buildStatusBadge(ride.status, translate),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -266,24 +287,24 @@ class PassengerRideCard extends StatelessWidget {
                 const SizedBox(height: 16),
                 const _RideDivider(),
                 const SizedBox(height: 16),
-                _buildTripDetailsGrid(ride),
+                _buildTripDetailsGrid(ride,  translate),
                 if (ride.services.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   const _RideDivider(),
                   const SizedBox(height: 12),
-                  _buildServicesSection(ride.services),
+                  _buildServicesSection(ride.services,translate ),
                 ],
                 if (ride.type == 1 && (ride.parcelDetails?.isNotEmpty ?? false)) ...[
                   const SizedBox(height: 16),
                   const _RideDivider(),
                   const SizedBox(height: 12),
-                  _buildParcelSection(ride),
+                  _buildParcelSection(ride, translate),
                 ],
                 if (_hasContactInfo(ride)) ...[
                   const SizedBox(height: 16),
                   const _RideDivider(),
                   const SizedBox(height: 12),
-                  _buildContactSection(ride),
+                  _buildContactSection(ride,translate),
                 ],
               ],
             ),
@@ -293,7 +314,7 @@ class PassengerRideCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusBadge(String status) {
+  Widget _buildStatusBadge(String status, TranslateProvider translate) {
     Color backgroundColor;
     Color textColor;
     String displayStatus = status;
@@ -301,22 +322,22 @@ class PassengerRideCard extends StatelessWidget {
       case 'completed':
         backgroundColor = Colors.green.shade100;
         textColor = Colors.green.shade800;
-        displayStatus = "COMPLETED";
+        displayStatus = "${translate.t('txt_completed')}";
         break;
       case 'cancelled':
         backgroundColor = Colors.red.shade100;
         textColor = Colors.red.shade800;
-        displayStatus = "CANCELLED";
+        displayStatus = "${translate.t('txt_cancelled')}";
         break;
       case 'confirmed':
         backgroundColor = Colors.green.shade100;
         textColor = Colors.green.shade800;
-        displayStatus = "CONFIRM";
+        displayStatus = "${translate.t('txt_confirm')}";
         break;
       default:
         backgroundColor = Colors.orange.shade100;
         textColor = Colors.orange.shade800;
-        displayStatus = "PENDING";
+        displayStatus = "${translate.t('txt_pending')}";
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -343,13 +364,9 @@ class PassengerRideCard extends StatelessWidget {
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: const BoxDecoration(
-                  color: Colors.green,
-                  shape: BoxShape.circle,
-                ),
+              SvgPicture.asset(
+                "assets/images/red_icon.svg",
+                height: 15,
               ),
               const SizedBox(height: 4),
               const DottedLine(
@@ -361,13 +378,9 @@ class PassengerRideCard extends StatelessWidget {
                 lineLength: 35,
               ),
               const SizedBox(height: 4),
-              Container(
-                width: 12,
-                height: 12,
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
+              SvgPicture.asset(
+                "assets/images/blue_icon.svg",
+                height: 15,
               ),
             ],
           ),
@@ -406,17 +419,17 @@ class PassengerRideCard extends StatelessWidget {
     );
   }
 
-  Widget _buildTripDetailsGrid(PassengerRequest ride) {
+  Widget _buildTripDetailsGrid(PassengerRequest ride, TranslateProvider translate) {
     return Column(
       children: [
         Row(
           children: [
             Expanded(
-              child: _buildDetailItem(Icons.event, "Date", ride.rideDate ?? "N/A"),
+              child: _buildDetailItem(Icons.event, "${translate.t('txt_date')}", ride.rideDate ?? "N/A"),
             ),
             if (ride.rideTime != null)
               Expanded(
-                child: _buildDetailItem(Icons.access_time, "Time", ride.rideTime!),
+                child: _buildDetailItem(Icons.access_time, "${translate.t('txt_ride_status_time')}", ride.rideTime!),
               ),
           ],
         ),
@@ -424,11 +437,11 @@ class PassengerRideCard extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: _buildDetailItem(Icons.event_seat, "Seats", "${ride.numberOfSeats}"),
+              child: _buildDetailItem(Icons.event_seat, "${translate.t('txt_ride_status_seats')}", "${ride.numberOfSeats}"),
             ),
             if (ride.budget != null && ride.budget!.isNotEmpty)
               Expanded(
-                child: _buildDetailItem(Icons.attach_money, "Budget", ride.budget!,
+                child: _buildDetailItem(null,"${translate.t('txt_ride_status_budget')} c", ride.budget!,
                     valueColor: AppTheme.seedPrimary),
               ),
           ],
@@ -437,11 +450,18 @@ class PassengerRideCard extends StatelessWidget {
     );
   }
 
-  Widget _buildDetailItem(IconData icon, String label, String value, {Color? valueColor}) {
+  Widget _buildDetailItem(
+      IconData? icon,
+      String label,
+      String value, {
+        Color? valueColor,
+      }) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: Colors.grey.shade600),
-        const SizedBox(width: 6),
+        if (icon != null) ...[
+          Icon(icon, size: 16, color: Colors.grey.shade600),
+          const SizedBox(width: 6),
+        ],
         Text(
           "$label: ",
           style: const TextStyle(
@@ -466,7 +486,7 @@ class PassengerRideCard extends StatelessWidget {
     );
   }
 
-  Widget _buildServicesSection(List<dynamic> services) {
+  Widget _buildServicesSection(List<dynamic> services, TranslateProvider translate) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -474,8 +494,8 @@ class PassengerRideCard extends StatelessWidget {
           children: [
             const Icon(Icons.miscellaneous_services, color: AppTheme.seedPrimary, size: 18),
             const SizedBox(width: 8),
-            const Text(
-              "Services",
+             Text(
+              "${translate.t('txt_ride_status_services')}",
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
@@ -515,7 +535,7 @@ class PassengerRideCard extends StatelessWidget {
     );
   }
 
-  Widget _buildParcelSection(PassengerRequest ride) {
+  Widget _buildParcelSection(PassengerRequest ride, TranslateProvider translate) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -523,8 +543,8 @@ class PassengerRideCard extends StatelessWidget {
           children: [
             const Icon(Icons.local_shipping, color: AppTheme.seedPrimary, size: 18),
             const SizedBox(width: 8),
-            const Text(
-              "Parcel Information",
+             Text(
+              "${translate.t('txt_parcel_information')}",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
             ),
           ],
@@ -547,7 +567,7 @@ class PassengerRideCard extends StatelessWidget {
     );
   }
 
-  Widget _buildContactSection(PassengerRequest ride) {
+  Widget _buildContactSection(PassengerRequest ride, TranslateProvider translate) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -555,8 +575,8 @@ class PassengerRideCard extends StatelessWidget {
           children: [
             const Icon(Icons.contacts, color: AppTheme.seedPrimary, size: 18),
             const SizedBox(width: 8),
-            const Text(
-              "Contact Information",
+             Text(
+              "${translate.t('txt_contact_information')}",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
             ),
           ],
@@ -574,10 +594,10 @@ class PassengerRideCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (ride.pickupContactName != null)
-                _buildContactRow(Icons.person, "Pickup Contact", ride.pickupContactName!),
+                _buildContactRow(Icons.person, "${translate.t('txt_pickup_contact')}", ride.pickupContactName!),
               if (ride.dropContactName != null) ...[
                 if (ride.pickupContactName != null) const SizedBox(height: 8),
-                _buildContactRow(Icons.person, "Drop Contact", ride.dropContactName!),
+                _buildContactRow(Icons.person, "${translate.t('txt_drop_contact')}", ride.dropContactName!),
               ],
             ],
           ),

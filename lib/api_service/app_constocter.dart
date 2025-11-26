@@ -1,5 +1,6 @@
 class App_Constructor {
   final BaseURL = "https://qadampayk.com";
+  final istestmode = false;
 
 
   //auth
@@ -17,7 +18,7 @@ final get_profile = "/api/get-profile";
   // ass vehical
   final addCar = "/api/driver/add-vehicle";
   final fetchCar = "/api/driver/get-vehicles";
-  final fetchServices = "/api/get-services";
+  final fetchServices = "/api/get-services?language=ru";
   final updateCar = "/api/driver/edit-vehicle"; // ✅ add slash at start
 
  // ride
