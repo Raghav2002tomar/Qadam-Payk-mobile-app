@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:bla_bla_car/providers/translate_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -125,18 +126,38 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
     }
   }
 
+
+
   Future<void> _pickImage(ImageSource source) async {
     Navigator.pop(context);
+
     final XFile? photo = await _picker.pickImage(source: source);
-    if (photo != null) {
-      final directory = await getApplicationDocumentsDirectory();
-      final path = '${directory.path}/${photo.name}';
-      await File(photo.path).copy(path);
-      setState(() {
-        _profileImage = path;
-        _user = _user?.copyWith(image: path);
-      });
-    }
+    if (photo == null) return;
+
+    final directory = await getApplicationDocumentsDirectory();
+
+    // Compressed file path
+    final String targetPath =
+        "${directory.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg";
+
+    // COMPRESS IMAGE
+    final XFile? compressedXFile =
+    await FlutterImageCompress.compressAndGetFile(
+      photo.path,
+      targetPath,
+      quality: 60,
+      minWidth: 1000,
+      minHeight: 1000,
+    );
+
+    // Convert XFile to File
+    final File compressedFile =
+    compressedXFile != null ? File(compressedXFile.path) : File(photo.path);
+
+    setState(() {
+      _profileImage = compressedFile.path;
+      _user = _user?.copyWith(image: compressedFile.path);
+    });
   }
 
   Future<void> _pickGovIdImage({required bool isFront}) async {
@@ -512,7 +533,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
             ),
           ),
         ),
-        Positioned(
+      if(_isEditing)  Positioned(
           bottom: 0,
           right: 0,
           child: GestureDetector(

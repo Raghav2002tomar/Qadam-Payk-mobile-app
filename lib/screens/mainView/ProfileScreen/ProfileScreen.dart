@@ -14,6 +14,7 @@ import '../../../providers/translate_provider.dart';
 import '../../../service/colors.dart';
 import '../../../service/local_cache.dart';
 import '../../auth/controller/auth_provider.dart';
+import '../../notification/screens/NotificationScreen.dart';
 import 'EditProfileScreen.dart';
 import 'PrivacyPolicyScreen.dart';
 import 'QueryScreen.dart';
@@ -135,87 +136,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     }
   }
 
-  Future<void> _pickProfilePhoto() async {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 50,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              context.watch<TranslateProvider>().t('txt_update_profile_photo'),
-              style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildPhotoOption(
-                  icon: Icons.camera_alt,
-                  label: context.watch<TranslateProvider>().t('txt_camera'),
-                  onTap: () => _pickImage(ImageSource.camera),
-                ),
-                _buildPhotoOption(
-                  icon: Icons.photo_library,
-                  label: context.watch<TranslateProvider>().t('txt_gallery'),
-                  onTap: () => _pickImage(ImageSource.gallery),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildPhotoOption({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 100,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF008955).withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF008955).withOpacity(0.2)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: const Color(0xFF008955), size: 32),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                color: const Color(0xFF008955),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Future<void> _pickImage(ImageSource source) async {
     Navigator.pop(context);
@@ -521,26 +443,26 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
         ),
 
         // ✅ Verify badge
-        if (verify == "true")
-          Positioned(
-            bottom: 0,
-            right: 5,
-            child: Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white, // white border
-              ),
-              padding: const EdgeInsets.all(4),
-              child: ClipOval(
-                child: Image.asset(
-                  "assets/images/verify_user.png",
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ),
+        // if (verify == "true")
+        //   Positioned(
+        //     bottom: 0,
+        //     right: 5,
+        //     child: Container(
+        //       width: 28,
+        //       height: 28,
+        //       decoration: BoxDecoration(
+        //         shape: BoxShape.circle,
+        //         color: Colors.white, // white border
+        //       ),
+        //       padding: const EdgeInsets.all(4),
+        //       child: ClipOval(
+        //         child: Image.asset(
+        //           "assets/images/verify_user.png",
+        //           fit: BoxFit.cover,
+        //         ),
+        //       ),
+        //     ),
+        //   ),
       ],
     );
   }
@@ -575,6 +497,18 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const Viewresponcescreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildModernTile(
+            Icons.newspaper_outlined,
+            context.watch<TranslateProvider>().t('txt_news_announcements'),
+            context.watch<TranslateProvider>().t('txt_edit_your_personal_info'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NotificationScreen()),
               );
             },
           ),

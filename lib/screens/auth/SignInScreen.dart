@@ -1,3 +1,4 @@
+import 'package:bla_bla_car/api_service/app_constocter.dart';
 import 'package:bla_bla_car/providers/translate_provider.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -73,15 +74,16 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                 //   ),
                 // ),
                 const SizedBox(height: 20),
+                // Text(App_Constructor().istestmode.toString()),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: TextField(
                     controller: phoneController,
                     keyboardType: TextInputType.number,
-                    maxLength: 9, // ✅ Only 9 digits allowed
+                    maxLength: App_Constructor().istestmode == true ?10: 9, // ✅ Only 9 digits allowed
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly, // ✅ Only numbers allowed
-                      LengthLimitingTextInputFormatter(9), // ✅ Restrict exactly 9 digits
+                      LengthLimitingTextInputFormatter(App_Constructor().istestmode == true ?10: 9), // ✅ Restrict exactly 9 digits
                     ],
                     decoration: InputDecoration(
                       counterText: "", // ✅ Hide character counter

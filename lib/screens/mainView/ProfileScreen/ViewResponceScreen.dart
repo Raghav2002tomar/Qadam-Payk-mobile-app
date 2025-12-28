@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -7,12 +6,17 @@ import '../../../providers/translate_provider.dart';
 import '../../../service/local_cache.dart';
 import '../../auth/SignInScreen.dart';
 import '../HomeShell.dart';
+import '../create/Passenge_request.dart';
+import '../create/Ride_Screen.dart';
 import '../provide/ChatProvider.dart';
 
 class Viewresponcescreen extends StatefulWidget {
   final int initialTabIndex;
 
-  const Viewresponcescreen({super.key, this.initialTabIndex = 0}); // 0 = first tab
+  const Viewresponcescreen({
+    super.key,
+    this.initialTabIndex = 0,
+  }); // 0 = first tab
 
   @override
   State<Viewresponcescreen> createState() => _ViewresponcescreenState();
@@ -25,17 +29,6 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
   List<dynamic> receivedRides = [];
   List<dynamic> passengerRequests = [];
   List<dynamic> sentResponses = [];
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _tabController = TabController(length: 2, vsync: this);
-  //   // Set default tab here
-  //   Future.delayed(Duration(milliseconds: 50), () {
-  //     _tabController.index = widget.initialTabIndex;
-  //   });
-  //   _fetchResponses();
-  // }
 
   @override
   void initState() {
@@ -58,7 +51,6 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
     _fetchResponses(); // Initial fetch
   }
 
-
   // Get total count for received tab
   int get receivedCount {
     int rideBookings = receivedRides.fold(0, (sum, ride) {
@@ -70,6 +62,277 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
     return rideBookings + driverRequests;
   }
 
+  void _editRide(dynamic ride) {
+    // TODO: Navigate to Edit Ride screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RideScreen(ride: Map<String, dynamic>.from(ride)),
+        ),
+      );
+    //   Navigator.push(context, MaterialPageRoute(builder: (_) => RideScreen()));
+  }
+  void _editRequest(dynamic ride) {
+    // TODO: Navigate to Edit Ride screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PassengerRequestScreen(ride: Map<String, dynamic>.from(ride)),
+      ),
+    );
+  }
+
+  void _onRideAction(String action, dynamic ride) {
+    switch (action) {
+      case 'edit':
+        _editRide(ride);
+        break;
+
+      case 'cancel':
+        _showCancelRideDialog(ride, false);
+        break;
+
+      case 'delete':
+        _showDeleteRideDialog(ride,false);
+        break;
+    }
+  }
+
+  void _onRequestAction(String action, dynamic ride) {
+    switch (action) {
+      case 'edit':
+        _editRequest(ride);
+        break;
+
+      case 'cancel':
+         _showCancelRideDialog(ride, true );
+        break;
+
+      case 'delete':
+        _showDeleteRideDialog(ride, true); // ✅ request delete
+        break;
+    }
+  }
+
+
+  Future<void> deleteRide({
+    required bool isRequest,
+    String? rideId,
+    String? requestId,
+  }) async {
+    const baseUrl = "https://qadampayk.com/api";
+
+    try {
+      final headers = await _getAuthHeaders();
+
+      final uri = isRequest
+          ? Uri.parse("$baseUrl/delete-ride-request")
+          : Uri.parse("$baseUrl/driver/delete-ride");
+
+      final body = isRequest
+          ? {"request_id": requestId}
+          : {"ride_id": rideId};
+
+      final response = await http.post(
+        uri,
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      print("📦 Delete Response: ${response.body}");
+
+      final json = jsonDecode(response.body);
+
+      // 🔐 Authentication check
+      if (json['status'] == false &&
+          json['message'] == "User not authenticated") {
+        await LocalCache.logout();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const PhoneNumberScreen()),
+        );
+        return;
+      }
+
+      if (response.statusCode == 200 && json['status'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isRequest
+                  ? context.read<TranslateProvider>()
+                  .t('txt_request_deleted_successfully')
+                  : context.read<TranslateProvider>()
+                  .t('txt_ride_deleted_successfully'),
+            ),
+          ),
+        );
+
+        _fetchResponses(); // 🔄 refresh list
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(json['message'] ?? "Delete failed")),
+        );
+      }
+    } catch (e, s) {
+      print("⚠️ Delete Error: $e\n$s");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
+  }
+
+  Future<Map<String, String>> _getAuthHeaders() async {
+    final authToken = await LocalCache.getToken();
+    return {
+      'Accept': 'application/json',
+      'Authorization': 'Bearer $authToken',
+      'Content-Type': 'application/json',
+    };
+  }
+
+  Future<void> cancelRide({
+    required bool isRequest,
+    String? rideId,
+    String? requestId,
+  }) async {
+    const baseUrl = "https://qadampayk.com/api";
+
+    try {
+      final headers = await _getAuthHeaders();
+
+      final uri = isRequest
+          ? Uri.parse("$baseUrl/cancel-ride-request")
+          : Uri.parse("$baseUrl/driver/cancel-ride");
+
+      final body = isRequest
+          ? {"request_id": requestId}
+          : {"ride_id": rideId};
+
+      final response = await http.post(
+        uri,
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      print("📦 Cancel Response: ${response.body}");
+
+      final json = jsonDecode(response.body);
+
+      // 🔐 Authentication check
+      if (json['status'] == false &&
+          json['message'] == "User not authenticated") {
+        await LocalCache.logout();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const PhoneNumberScreen()),
+        );
+        return;
+      }
+
+      if (response.statusCode == 200 && json['status'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isRequest
+                  ? context.read<TranslateProvider>()
+                  .t('txt_request_cancelled_successfully')
+                  : context.read<TranslateProvider>()
+                  .t('txt_ride_cancelled_successfully'),
+            ),
+          ),
+        );
+
+        _fetchResponses(); // 🔄 refresh list
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(json['message'] ?? "Cancel failed")),
+        );
+      }
+    } catch (e, s) {
+      print("⚠️ Cancel Error: $e\n$s");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
+  }
+
+
+  void _showCancelRideDialog(dynamic ride, bool isrequest) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          isrequest
+              ? context.read<TranslateProvider>().t('txt_cancel_request')
+              : context.read<TranslateProvider>().t('txt_cancel_ride'),
+        ),
+        content: Text(
+          isrequest
+              ? context.read<TranslateProvider>().t('txt_cancel_request_desc')
+              : context.read<TranslateProvider>().t('txt_cancel_ride_desc'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(context.read<TranslateProvider>().t('txt_no')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            onPressed: () {
+              Navigator.pop(context);
+
+              cancelRide(
+                isRequest: isrequest,
+                rideId: ride['ride_id']?.toString(),
+                requestId: ride['request_id']?.toString(),
+              );
+            },
+            child: Text(context.read<TranslateProvider>().t('txt_yes')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteRideDialog(dynamic ride, bool isRequest) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          isRequest
+              ? context.read<TranslateProvider>().t('txt_delete_request')
+              : context.read<TranslateProvider>().t('txt_delete_ride'),
+          style: const TextStyle(color: Colors.red),
+        ),
+        content: Text(
+          isRequest
+              ? context.read<TranslateProvider>().t('txt_delete_request_desc')
+              : context.read<TranslateProvider>().t('txt_delete_ride_desc'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(context.read<TranslateProvider>().t('txt_cancel')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              Navigator.pop(context);
+
+              deleteRide(
+                isRequest: isRequest,
+                rideId: ride['ride_id']?.toString(),
+                requestId: ride['request_id']?.toString(),
+              );
+            },
+            child: Text(context.read<TranslateProvider>().t('txt_delete')),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _fetchResponses() async {
     setState(() => loading = true);
@@ -116,7 +379,8 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
         List<dynamic> passengerReqs = [];
 
         if (receivedJson['data'] is Map) {
-          ridesWithBookings = (receivedJson['data']['rides_with_bookings'] is List)
+          ridesWithBookings =
+              (receivedJson['data']['rides_with_bookings'] is List)
               ? List<dynamic>.from(receivedJson['data']['rides_with_bookings'])
               : [];
           passengerReqs = (receivedJson['data']['passenger_requests'] is List)
@@ -149,85 +413,14 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
       } else {
         setState(() => loading = false);
         print(
-            "⚠️ Failed to fetch responses. Status codes - Received: ${receivedRes.statusCode}, Sent: ${sentRes.statusCode}");
+          "⚠️ Failed to fetch responses. Status codes - Received: ${receivedRes.statusCode}, Sent: ${sentRes.statusCode}",
+        );
       }
     } catch (e, s) {
       print("⚠️ Error fetching responses: $e\n$s");
       setState(() => loading = false);
     }
   }
-
-
-  // Future<void> _fetchResponses() async {
-  //   setState(() => loading = true);
-  //   final authToken = await LocalCache.getToken();
-  //   const baseUrl = "https://qadampayk.com/api";
-  //
-  //   try {
-  //     final headers = {
-  //       'Accept': 'application/json',
-  //       'Authorization': 'Bearer $authToken',
-  //     };
-  //
-  //     final receivedRes =
-  //     await http.get(Uri.parse("$baseUrl/get-recived-response"), headers: headers);
-  //     final sentRes =
-  //     await http.get(Uri.parse("$baseUrl/get-send-response"), headers: headers);
-  //
-  //     print("📦 Received Response Body: ${receivedRes.body}");
-  //     print("📦 Sent Response Body: ${sentRes.body}");
-  //
-  //     if (receivedRes.statusCode == 200 && sentRes.statusCode == 200) {
-  //       final receivedJson = jsonDecode(receivedRes.body);
-  //       final sentJson = jsonDecode(sentRes.body);
-  //
-  //       List<dynamic> ridesWithBookings = [];
-  //       List<dynamic> passengerReqs = [];
-  //
-  //       if (receivedJson['data'] is Map) {
-  //         ridesWithBookings = (receivedJson['data']['rides_with_bookings'] is List)
-  //             ? List<dynamic>.from(receivedJson['data']['rides_with_bookings'])
-  //             : [];
-  //         passengerReqs = (receivedJson['data']['passenger_requests'] is List)
-  //             ? List<dynamic>.from(receivedJson['data']['passenger_requests'])
-  //             : [];
-  //       } else if (receivedJson['data'] is List) {
-  //         ridesWithBookings = List<dynamic>.from(receivedJson['data']);
-  //       }
-  //
-  //       List<dynamic> sentList = [];
-  //       if (sentJson['data'] is List) {
-  //         sentList = List<dynamic>.from(sentJson['data']);
-  //       } else if (sentJson['data'] is Map) {
-  //         sentList = [sentJson['data']];
-  //       }
-  //
-  //       sentList = sentList.map((e) {
-  //         if (e is Map<String, dynamic>) return e;
-  //         return Map<String, dynamic>.from(e as Map);
-  //       }).toList();
-  //
-  //       if (mounted) {
-  //         setState(() {
-  //           receivedRides = ridesWithBookings;
-  //           passengerRequests = passengerReqs;
-  //           sentResponses = sentList;
-  //           loading = false;
-  //         });
-  //       }
-  //     }else if (receivedRes.statusCode == 401){
-  //       print("ghjkl");
-  //     }
-  //     else {
-  //       setState(() => loading = false);
-  //       print(
-  //           "⚠️ Failed to fetch responses. Status codes - Received: ${receivedRes.statusCode}, Sent: ${sentRes.statusCode}");
-  //     }
-  //   } catch (e, s) {
-  //     print("⚠️ Error fetching responses: $e\n$s");
-  //     setState(() => loading = false);
-  //   }
-  // }
 
   Future<void> _updateBookingStatus(String bookingId, String status) async {
     final authToken = await LocalCache.getToken();
@@ -246,8 +439,12 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
         _fetchResponses();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Booking ${status == 'confirmed' ? 'confirmed' : 'cancelled'} successfully"),
-            backgroundColor: status == 'confirmed' ? Colors.green : Colors.orange,
+            content: Text(
+              "Booking ${status == 'confirmed' ? 'confirmed' : 'cancelled'} successfully",
+            ),
+            backgroundColor: status == 'confirmed'
+                ? Colors.green
+                : Colors.orange,
           ),
         );
       } else {
@@ -256,12 +453,17 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Error: $e")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
-  Future<void> _updateDriverStatus(String bookingId, String requestID, String status) async {
+  Future<void> _updateDriverStatus(
+    String bookingId,
+    String requestID,
+    String status,
+  ) async {
     final authToken = await LocalCache.getToken();
     const baseUrl = "https://qadampayk.com/api/request/respond-driver";
     try {
@@ -271,15 +473,23 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
           'Accept': 'application/json',
           'Authorization': 'Bearer $authToken',
         },
-        body: {'driver_id': bookingId, "request_id": requestID, "status": status},
+        body: {
+          'driver_id': bookingId,
+          "request_id": requestID,
+          "status": status,
+        },
       );
 
       if (res.statusCode == 200) {
         _fetchResponses();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Driver ${status == 'confirmed' ? 'accepted' : 'rejected'} successfully"),
-            backgroundColor: status == 'confirmed' ? Colors.green : Colors.orange,
+            content: Text(
+              "Driver ${status == 'confirmed' ? 'accepted' : 'rejected'} successfully",
+            ),
+            backgroundColor: status == 'confirmed'
+                ? Colors.green
+                : Colors.orange,
           ),
         );
       } else {
@@ -288,8 +498,9 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Error: $e")));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
@@ -308,7 +519,10 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
     );
   }
 
-  Widget _buildBookingCard(Map<String, dynamic> booking, {bool isRideBooking = true}) {
+  Widget _buildBookingCard(
+    Map<String, dynamic> booking, {
+    bool isRideBooking = true,
+  }) {
     final status = booking['status'] ?? 'pending';
     final theme = Theme.of(context);
 
@@ -345,7 +559,11 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                     color: theme.colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(Icons.person, color: theme.colorScheme.primary, size: 24),
+                  child: Icon(
+                    Icons.person,
+                    color: theme.colorScheme.primary,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -353,7 +571,9 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        booking['passenger_name'] ?? booking['name'] ?? 'Unnamed',
+                        booking['passenger_name'] ??
+                            booking['name'] ??
+                            'Unnamed',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -361,10 +581,16 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.phone, size: 14, color: theme.colorScheme.secondary),
+                          Icon(
+                            Icons.phone,
+                            size: 14,
+                            color: theme.colorScheme.secondary,
+                          ),
                           const SizedBox(width: 4),
                           Text(
-                            booking['passenger_phone'] ?? booking['phone_number'] ?? 'N/A',
+                            booking['passenger_phone'] ??
+                                booking['phone_number'] ??
+                                'N/A',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -375,7 +601,10 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -387,10 +616,10 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                     booking['active_status'] == "1"
                         ? "Active"
                         : booking['active_status'] == "2"
-                        ? "Completed"  // <-- Set what you want for status "2"
+                        ? "Completed" // <-- Set what you want for status "2"
                         : status.toUpperCase(),
 
-                  style: TextStyle(
+                    style: TextStyle(
                       color: statusColor,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -399,14 +628,19 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                 ),
               ],
             ),
-            if (booking['seats_booked'] != null || booking['price'] != null) ...[
+            if (booking['seats_booked'] != null ||
+                booking['price'] != null) ...[
               const SizedBox(height: 12),
               Divider(color: theme.colorScheme.outline.withOpacity(0.2)),
               const SizedBox(height: 12),
               Row(
                 children: [
                   if (booking['seats_booked'] != null) ...[
-                    Icon(Icons.airline_seat_recline_normal, size: 18, color: theme.colorScheme.secondary),
+                    Icon(
+                      Icons.airline_seat_recline_normal,
+                      size: 18,
+                      color: theme.colorScheme.secondary,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       "${booking['seats_booked']} ${context.watch<TranslateProvider>().t('txt_seats')}",
@@ -416,10 +650,11 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                   ],
                   if (booking['price'] != null) ...[
                     // Icon(Icons.currency_rupee, size: 18, color: theme.colorScheme.secondary),
-
                     Text(
                       "${booking['price']}",
-                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     Text("c"),
                   ],
@@ -434,8 +669,13 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
     );
   }
 
-  Widget _buildActionButtons(Map<String, dynamic> booking, String status, bool isRideBooking, ThemeData theme) {
-
+  Widget _buildActionButtons(
+    Map<String, dynamic> booking,
+    String status,
+    bool isRideBooking,
+    ThemeData theme,
+  ) {
+    print("Status--------${status}");
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -446,27 +686,41 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
               label: "Confirm",
               icon: Icons.check_circle_outline,
               color: Colors.green,
-              onPressed: () => _updateBookingStatus(booking['booking_id'].toString(), 'confirmed'),
+              onPressed: () => _updateBookingStatus(
+                booking['booking_id'].toString(),
+                'confirmed',
+              ),
             ),
             _buildActionButton(
               label: "Cancel",
               icon: Icons.cancel_outlined,
               color: Colors.red,
-              onPressed: () => _updateBookingStatus(booking['booking_id'].toString(), 'cancelled'),
+              onPressed: () => _updateBookingStatus(
+                booking['booking_id'].toString(),
+                'cancelled',
+              ),
             ),
           ] else ...[
             _buildActionButton(
               label: "Accept",
               icon: Icons.check_circle_outline,
               color: Colors.green,
-              onPressed: () => _updateBookingStatus(booking['interest_id'].toString(), 'confirmed'),
+              onPressed: () => _updateBookingStatus(
+                booking['interest_id'].toString(),
+                'confirmed',
+              ),
             ),
             _buildActionButton(
               label: "Reject",
               icon: Icons.cancel_outlined,
               color: Colors.red,
-              onPressed: () => _updateBookingStatus(booking['interest_id'].toString(), 'cancelled'),
+              onPressed: () => _updateBookingStatus(
+                booking['interest_id'].toString(),
+                'cancelled',
+              ),
+
             ),
+            SizedBox(height: 4,),
           ],
           _buildActionButton(
             label: "${context.watch<TranslateProvider>().t('txt_chats')}",
@@ -475,18 +729,27 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
             onPressed: () => _openChat(booking),
           ),
         ] else if (status == 'confirmed') ...[
-        if(status == 'confirmed'&& booking['active_status'] == "0")  _buildActionButton(
-            label: status == 'confirmed'&& booking['active_status'] == "0" ? "Start Ride": "Already started",
-            icon: Icons.play_arrow,
-            color: Colors.blue,
-            onPressed:status == 'confirmed'&& booking['active_status'] != "0" ?(){}: () { _startRide(booking['booking_id'].toString());},
-          ),
-          if(status == 'confirmed'&& booking['active_status'] == "1")  _buildActionButton(
-            label: "End Ride",
-            icon: Icons.stop_circle_outlined,
-            color: Colors.orange,
-            onPressed: () => _endRide(booking['booking_id'].toString()),
-          ),
+          if (status == 'confirmed' && booking['active_status'] == "0")
+            _buildActionButton(
+              label: status == 'confirmed' && booking['active_status'] == "0"
+                  ? context.read<TranslateProvider>().t('txt_start_ride')
+                  : "Already started",
+              icon: Icons.play_arrow,
+              color: Colors.blue,
+              onPressed:
+                  status == 'confirmed' && booking['active_status'] != "0"
+                  ? () {}
+                  : () {
+                      _startRide(booking['booking_id'].toString());
+                    },
+            ),
+          if (status == 'confirmed' && booking['active_status'] == "1")
+            _buildActionButton(
+              label: context.read<TranslateProvider>().t('txt_end_ride'),
+              icon: Icons.stop_circle_outlined,
+              color: Colors.orange,
+              onPressed: () => _endRide(booking['booking_id'].toString()),
+            ),
           _buildActionButton(
             label: "${context.watch<TranslateProvider>().t('txt_chats')}",
             icon: Icons.chat_bubble_outline,
@@ -533,12 +796,14 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
     const url = "https://qadampayk.com/api/upadte-booking-active-status";
 
     try {
-      final res = await http.post(Uri.parse(url),
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': 'Bearer $authToken',
-          },
-          body: {'booking_id': bookingId});
+      final res = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
+        body: {'booking_id': bookingId},
+      );
 
       if (res.statusCode == 200) _fetchResponses();
     } catch (e) {
@@ -551,12 +816,14 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
     const url = "https://qadampayk.com/api/upadte-booking-complete-status";
 
     try {
-      final res = await http.post(Uri.parse(url),
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': 'Bearer $authToken',
-          },
-          body: {'booking_id': bookingId});
+      final res = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        },
+        body: {'booking_id': bookingId},
+      );
 
       if (res.statusCode == 200) _fetchResponses();
     } catch (e) {
@@ -572,7 +839,11 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox_outlined, size: 80, color: theme.colorScheme.outline),
+            Icon(
+              Icons.inbox_outlined,
+              size: 80,
+              color: theme.colorScheme.outline,
+            ),
             const SizedBox(height: 16),
             Text(
               "${context.watch<TranslateProvider>().t('txt_no_ride_details')}",
@@ -601,6 +872,12 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
   }
 
   Widget _buildRideCard(dynamic ride, List bookings, ThemeData theme) {
+    final bookings = ride['bookings'] as List? ?? [];
+    final bookingStatus =
+    bookings.isNotEmpty ? bookings.first['status'] : null;
+    final activeStatus =
+    bookings.isNotEmpty ? bookings.first['active_status'] : null;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -638,7 +915,11 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                         color: theme.colorScheme.primary,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.directions_car, color: Colors.white, size: 20),
+                      child: const Icon(
+                        Icons.directions_car,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -664,20 +945,77 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                         ],
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        "${bookings.length}",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                    Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            "${bookings.length}",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ),
+                        SizedBox(height: 4),
+                        // status == 'pending'
+                        if (ride['bookings'].length == 0 || bookingStatus == 'pending' || activeStatus == "0" )
+                        PopupMenuButton<String>(
+                          onSelected: (value) => _onRideAction(value, ride),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          elevation: 10,
+                          offset: const Offset(0, 45),
+                          itemBuilder: (context) => [
+                            _buildMenuItem(
+                              value: 'edit',
+                              icon: Icons.edit,
+                              label: context.read<TranslateProvider>().t(
+                                'txt_edit',
+                              ),
+                              color: theme.colorScheme.primary,
+                            ),
+                            if(bookings.length != 0 )  _buildMenuItem(
+                              value: 'cancel',
+                              icon: Icons.cancel_outlined,
+                              label: context.read<TranslateProvider>().t(
+                                'txt_cancel',
+                              ),
+                              color: Colors.orange,
+                            ),
+                            if(bookings.length == 0 )   const PopupMenuDivider(),
+                          if(bookings.length == 0 )  _buildMenuItem(
+                              value: 'delete',
+                              icon: Icons.delete_outline,
+                              label: context.read<TranslateProvider>().t(
+                                'txt_delete',
+                              ),
+                              color: Colors.red,
+                            ),
+                          ],
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Icon(
+                              Icons.more_vert,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -686,30 +1024,45 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                   spacing: 16,
                   runSpacing: 8,
                   children: [
-                    _buildInfoChip(  leading: Icon(
-                      Icons.calendar_today,
-                      size: 16,
-                      color: theme.colorScheme.secondary,
-                    ),
-                        text: "${ride['ride_date']}",  theme:theme),
-                    _buildInfoChip(  leading: Icon(
-                      Icons.access_time,
-                      size: 16,
-                      color: theme.colorScheme.secondary,
-                    ),  text:  "${ride['ride_time']}", theme:theme),
                     _buildInfoChip(
-                        leading: Icon(
-                          Icons.local_shipping,
-                          size: 16,
-                          color: theme.colorScheme.secondary,
-                        ),
-                        text: ride['accept_parcel'] ? '${context.watch<TranslateProvider>().t('txt_parcel_contact')}: Yes' : '${context.watch<TranslateProvider>().t('txt_parcel_contact')}: No',theme: theme),
+                      leading: Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: theme.colorScheme.secondary,
+                      ),
+                      text: "${ride['ride_date']}",
+                      theme: theme,
+                    ),
+                    _buildInfoChip(
+                      leading: Icon(
+                        Icons.access_time,
+                        size: 16,
+                        color: theme.colorScheme.secondary,
+                      ),
+                      text: "${ride['ride_time']}",
+                      theme: theme,
+                    ),
+                    _buildInfoChip(
+                      leading: Icon(
+                        Icons.local_shipping,
+                        size: 16,
+                        color: theme.colorScheme.secondary,
+                      ),
+                      text: ride['accept_parcel']
+                          ? '${context.watch<TranslateProvider>().t('txt_parcel_contact')}: Yes'
+                          : '${context.watch<TranslateProvider>().t('txt_parcel_contact')}: No',
+                      theme: theme,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.directions_car_outlined, size: 16, color: theme.colorScheme.secondary),
+                    Icon(
+                      Icons.directions_car_outlined,
+                      size: 16,
+                      color: theme.colorScheme.secondary,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       "${ride['vehicle_name']} (${ride['vehicle_number']})",
@@ -735,7 +1088,9 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                   ),
                 ),
                 const SizedBox(height: 12),
-                ...bookings.map((b) => _buildBookingCard(Map<String, dynamic>.from(b))).toList(),
+                ...bookings
+                    .map((b) => _buildBookingCard(Map<String, dynamic>.from(b)))
+                    .toList(),
               ],
             ),
           ),
@@ -744,7 +1099,17 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
     );
   }
 
-  Widget _buildPassengerRequestCard(dynamic req, List bookings, ThemeData theme) {
+  Widget _buildPassengerRequestCard(
+    dynamic req,
+    List bookings,
+    ThemeData theme,
+  ) {
+    final bookings = req['bookings'] as List? ?? [];
+    final bookingStatus =
+    bookings.isNotEmpty ? bookings.first['status'] : null;
+    final activeStatus =
+    bookings.isNotEmpty ? bookings.first['active_status'] : null;
+
     final hasDrivers = bookings.isNotEmpty;
 
     return Container(
@@ -784,7 +1149,11 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                         color: Colors.orange,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.person_search, color: Colors.white, size: 20),
+                      child: const Icon(
+                        Icons.person_search,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -810,20 +1179,77 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                         ],
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.orange,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        "${bookings.length}",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                    Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.orange,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            "${bookings.length}",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ),
+                        SizedBox(height: 4,),
+                        if (req['bookings'].length == 0 || bookingStatus == 'pending'|| activeStatus == "0")
+                          PopupMenuButton<String>(
+                          onSelected: (value) => _onRequestAction(value, req),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          elevation: 10,
+                          offset: const Offset(0, 45),
+                          itemBuilder: (context) => [
+                            _buildMenuItem(
+                              value: 'edit',
+                              icon: Icons.edit,
+                              label: context.read<TranslateProvider>().t(
+                                'txt_edit',
+                              ),
+                              color: theme.colorScheme.primary,
+                            ),
+                            if(bookings.length != 0 )  _buildMenuItem(
+                              value: 'cancel',
+                              icon: Icons.cancel_outlined,
+                              label: context.read<TranslateProvider>().t(
+                                'txt_cancel',
+                              ),
+                              color: Colors.orange,
+                            ),
+                            if(bookings.length == 0 )   const PopupMenuDivider(),
+                            if(bookings.length == 0 )  _buildMenuItem(
+                              value: 'delete',
+                              icon: Icons.delete_outline,
+                              label: context.read<TranslateProvider>().t(
+                                'txt_delete',
+                              ),
+                              color: Colors.red,
+                            ),
+                          ],
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.orange,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Icon(
+                              Icons.more_vert,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+
+                      ],
                     ),
                   ],
                 ),
@@ -833,36 +1259,49 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                   runSpacing: 8,
                   children: [
                     _buildInfoChip(
-                        leading: Icon(
-                          Icons.calendar_today,
-                          size: 16,
-                          color: theme.colorScheme.secondary,
-                        ),
-                        text: "${req['ride_date']}",theme: theme),
+                      leading: Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: theme.colorScheme.secondary,
+                      ),
+                      text: "${req['ride_date']}",
+                      theme: theme,
+                    ),
                     _buildInfoChip(
-                        leading: Icon(
-                          Icons.access_time,
-                          size: 16,
-                          color: theme.colorScheme.secondary,
-                        ),
-                        text:"${req['ride_time'] ?? '-'}",theme: theme),
+                      leading: Icon(
+                        Icons.access_time,
+                        size: 16,
+                        color: theme.colorScheme.secondary,
+                      ),
+                      text: "${req['ride_time'] ?? '-'}",
+                      theme: theme,
+                    ),
                     _buildInfoChip(
-                        leading: Icon(
-                          Icons.event_seat,
-                          size: 16,
-                          color: theme.colorScheme.secondary,
-                        ),
-                        text: "${req['number_of_seats']} ${context.watch<TranslateProvider>().t('txt_seats')}",theme: theme),
+                      leading: Icon(
+                        Icons.event_seat,
+                        size: 16,
+                        color: theme.colorScheme.secondary,
+                      ),
+                      text:
+                          "${req['number_of_seats']} ${context.watch<TranslateProvider>().t('txt_seats')}",
+                      theme: theme,
+                    ),
                     _buildInfoChip(
-                        leading: Text(""),
-                        text: "${req['budget']} c",theme: theme),
+                      leading: Text(""),
+                      text: "${req['budget']} c",
+                      theme: theme,
+                    ),
                   ],
                 ),
                 if (req['parcel_details'] != null) ...[
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.inventory_2_outlined, size: 16, color: theme.colorScheme.secondary),
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        size: 16,
+                        color: theme.colorScheme.secondary,
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -892,7 +1331,9 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                 ),
                 const SizedBox(height: 12),
                 if (hasDrivers)
-                  ...bookings.map((driver) => _buildDriverCard(driver, theme)).toList()
+                  ...bookings
+                      .map((driver) => _buildDriverCard(driver, theme))
+                      .toList()
                 else
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -902,7 +1343,10 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.info_outline, color: theme.colorScheme.onSurfaceVariant),
+                        Icon(
+                          Icons.info_outline,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -959,9 +1403,15 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                 CircleAvatar(
                   radius: 28,
                   backgroundColor: theme.colorScheme.primaryContainer,
-                  backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
+                  backgroundImage: imageUrl != null
+                      ? NetworkImage(imageUrl)
+                      : null,
                   child: imageUrl == null
-                      ? Icon(Icons.person, size: 30, color: theme.colorScheme.primary)
+                      ? Icon(
+                          Icons.person,
+                          size: 30,
+                          color: theme.colorScheme.primary,
+                        )
                       : null,
                 ),
                 const SizedBox(width: 12),
@@ -988,7 +1438,9 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                           // ),
                           const SizedBox(width: 12),
                           Icon(
-                            driver['gender'] == 'male' ? Icons.male : Icons.female,
+                            driver['gender'] == 'male'
+                                ? Icons.male
+                                : Icons.female,
                             size: 14,
                             color: theme.colorScheme.secondary,
                           ),
@@ -1005,7 +1457,10 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(16),
@@ -1022,7 +1477,8 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                 ),
               ],
             ),
-            SizedBox(height: 8,),
+            SizedBox(height: 8),
+
             // _buildActionButton(
             //   label: "Chat",
             //   icon: Icons.chat_bubble_outline,
@@ -1042,7 +1498,6 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
             //     );
             //   },
             // ),
-
             if (status == 'pending') ...[
               const SizedBox(height: 12),
               Divider(color: theme.colorScheme.outline.withOpacity(0.2)),
@@ -1071,17 +1526,16 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                       'declined',
                     ),
                   ),
-
                 ],
-
               ),
             ],
-          if(status == 'pending' && status == 'pending' )  _buildActionButton(
-              label: "${context.watch<TranslateProvider>().t('txt_chats')}",
-              icon: Icons.chat_bubble_outline,
-              color: theme.colorScheme.primary,
-              onPressed: () => _openChat(driver),
-            ),
+            if (status == 'pending' && status == 'pending')
+              _buildActionButton(
+                label: "${context.watch<TranslateProvider>().t('txt_chats')}",
+                icon: Icons.chat_bubble_outline,
+                color: theme.colorScheme.primary,
+                onPressed: () => _openChat(driver),
+              ),
           ],
         ),
       ),
@@ -1106,11 +1560,10 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
               fontWeight: FontWeight.w500,
             ),
           ),
-        ]
+        ],
       ],
     );
   }
-
 
   Widget _buildSentTab() {
     final theme = Theme.of(context);
@@ -1121,7 +1574,11 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.send_outlined, size: 80, color: theme.colorScheme.outline),
+            Icon(
+              Icons.send_outlined,
+              size: 80,
+              color: theme.colorScheme.outline,
+            ),
             const SizedBox(height: 16),
             Text(
               "${context.watch<TranslateProvider>().t('txt_no_ride_details')}",
@@ -1147,7 +1604,9 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
         final rideDate = req['ride_date'] ?? '-';
         final rideTime = req['ride_time'] ?? '-';
         final status = req['status'] ?? '-';
-        final servicesList = (req['services'] is List) ? req['services'].cast<String>() : [];
+        final servicesList = (req['services'] is List)
+            ? req['services'].cast<String>()
+            : [];
 
         Color statusColor = status == 'confirmed'
             ? Colors.green
@@ -1160,7 +1619,9 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.2),
+            ),
             boxShadow: [
               BoxShadow(
                 color: theme.colorScheme.shadow.withOpacity(0.1),
@@ -1189,7 +1650,11 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                         color: theme.colorScheme.secondary,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.send, color: Colors.white, size: 20),
+                      child: const Icon(
+                        Icons.send,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -1216,7 +1681,10 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: statusColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
@@ -1244,39 +1712,54 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                       runSpacing: 12,
                       children: [
                         _buildInfoChip(
-                            leading: Icon(
-                              Icons.calendar_today,
-                              size: 16,
-                              color: theme.colorScheme.secondary,
-                            ),
-                            text:rideDate, theme:theme),
+                          leading: Icon(
+                            Icons.calendar_today,
+                            size: 16,
+                            color: theme.colorScheme.secondary,
+                          ),
+                          text: rideDate,
+                          theme: theme,
+                        ),
                         _buildInfoChip(
-                            leading: Icon(
-                              Icons.access_time,
-                              size: 16,
-                              color: theme.colorScheme.secondary,
-                            ),
-                            text:rideTime,theme: theme),
+                          leading: Icon(
+                            Icons.access_time,
+                            size: 16,
+                            color: theme.colorScheme.secondary,
+                          ),
+                          text: rideTime,
+                          theme: theme,
+                        ),
                         _buildInfoChip(
-                            leading: Icon(
-                              Icons.event_seat,
-                              size: 16,
-                              color: theme.colorScheme.secondary,
-                            ),
-                            text: "$seats ${context.watch<TranslateProvider>().t('txt_seats')}",theme: theme),
+                          leading: Icon(
+                            Icons.event_seat,
+                            size: 16,
+                            color: theme.colorScheme.secondary,
+                          ),
+                          text:
+                              "$seats ${context.watch<TranslateProvider>().t('txt_seats')}",
+                          theme: theme,
+                        ),
                         _buildInfoChip(
-                            leading: Text(""),
-                            text:"$budget c ",theme: theme),
+                          leading: Text(""),
+                          text: "$budget c ",
+                          theme: theme,
+                        ),
                       ],
                     ),
                     if (servicesList.isNotEmpty) ...[
                       const SizedBox(height: 12),
-                      Divider(color: theme.colorScheme.outline.withOpacity(0.2)),
+                      Divider(
+                        color: theme.colorScheme.outline.withOpacity(0.2),
+                      ),
                       const SizedBox(height: 12),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.miscellaneous_services, size: 16, color: theme.colorScheme.secondary),
+                          Icon(
+                            Icons.miscellaneous_services,
+                            size: 16,
+                            color: theme.colorScheme.secondary,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Wrap(
@@ -1284,15 +1767,20 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                               runSpacing: 6,
                               children: servicesList.map((service) {
                                 return Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: theme.colorScheme.primaryContainer.withOpacity(0.5),
+                                    color: theme.colorScheme.primaryContainer
+                                        .withOpacity(0.5),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
                                     service,
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onPrimaryContainer,
+                                      color:
+                                          theme.colorScheme.onPrimaryContainer,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -1306,29 +1794,39 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                   ],
                 ),
               ),
-          // if(req['type'] == "request_interest")  Text(req['passenger_name']),
-              if(status == 'confirmed'&& req['type'] == "request_interest"&& req['active_status'] == "0")  _buildActionButton(
-                label: status == 'confirmed'&& req['active_status'] == "0" ? "Start Ride": "Already started",
-                icon: Icons.play_arrow,
-                color: Colors.blue,
-                onPressed:() { _startRide(req['booking_id'].toString());},
-              ),
-              SizedBox(height: 8,),
-              if(status == 'confirmed'&& req['type'] == "request_interest"&& req['active_status'] == "1")  _buildActionButton(
-                label: "End Ride",
-                icon: Icons.stop_circle_outlined,
-                color: Colors.orange,
-                onPressed: () => _endRide(req['booking_id'].toString()),
-              ),
-              SizedBox(height: 8,),
+              // if(req['type'] == "request_interest")  Text(req['passenger_name']),
+              if (status == 'confirmed' &&
+                  // req['type'] == "request_interest" &&
+                  req['active_status'] == "0")
+                _buildActionButton(
+                  label: status == 'confirmed' && req['active_status'] == "0"
+                      ?context.read<TranslateProvider>().t('txt_start_ride')
+                      : "Already started",
+                  icon: Icons.play_arrow,
+                  color: Colors.blue,
+                  onPressed: () {
+                    _startRide(req['booking_id'].toString());
+                  },
+                ),
+              SizedBox(height: 8),
+              if (status == 'confirmed' &&
+                  // req['type'] == "request_interest" &&
+                  req['active_status'] == "1")
+                _buildActionButton(
+                  label: context.read<TranslateProvider>().t('txt_end_ride'),
+                  icon: Icons.stop_circle_outlined,
+                  color: Colors.orange,
+                  onPressed: () => _endRide(req['booking_id'].toString()),
+                ),
+              SizedBox(height: 8),
               _buildActionButton(
                 label: "${context.watch<TranslateProvider>().t('txt_chats')}",
                 icon: Icons.chat_bubble_outline,
                 color: theme.colorScheme.primary,
-                 onPressed: () => _openChat(req),
+                onPressed: () => _openChat(req),
                 // onPressed: () {},
               ),
-              SizedBox(height: 8,),
+              SizedBox(height: 8),
             ],
           ),
         );
@@ -1345,7 +1843,9 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
         // Navigate to HomeShell with Profile tab instead of going back
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const HomeShell(initialIndex: 4)), // 4 = Profile
+          MaterialPageRoute(
+            builder: (_) => const HomeShell(initialIndex: 4),
+          ), // 4 = Profile
         );
         return false; // Prevent default back behavior
       },
@@ -1355,15 +1855,12 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
         body: loading
             ? const Center(child: CircularProgressIndicator())
             : RefreshIndicator(
-          onRefresh: _fetchResponses,
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildReceivedTab(),
-              _buildSentTab(),
-            ],
-          ),
-        ),
+                onRefresh: _fetchResponses,
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [_buildReceivedTab(), _buildSentTab()],
+                ),
+              ),
       ),
     );
   }
@@ -1373,15 +1870,19 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
     final double pillRadius = 22;
 
     return AppBar(
-      leading: InkWell(onTap: (){
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeShell(initialIndex: 4)), // 4 = Profile
-        );
-      },
-          child: Icon(Icons.arrow_back_sharp)),
+      leading: InkWell(
+        onTap: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const HomeShell(initialIndex: 4),
+            ), // 4 = Profile
+          );
+        },
+        child: Icon(Icons.arrow_back_sharp),
+      ),
       title: Text(
-        context.watch<TranslateProvider>().t('txt_view_responce') ,
+        context.watch<TranslateProvider>().t('txt_view_responce'),
         style: theme.textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.bold,
           color: theme.colorScheme.onBackground,
@@ -1431,11 +1932,17 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                       Text("${context.watch<TranslateProvider>().t('txt_received_responce') }",style: TextStyle(fontSize: 12)),
+                      Text(
+                        "${context.watch<TranslateProvider>().t('txt_received_responce')}",
+                        style: TextStyle(fontSize: 12),
+                      ),
                       if (receivedCount > 0) ...[
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: _tabController.index == 0
                                 ? Colors.white.withOpacity(0.3)
@@ -1461,11 +1968,17 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text("${context.watch<TranslateProvider>().t('txt_send_responce') }",style: TextStyle(fontSize: 12),),
+                      Text(
+                        "${context.watch<TranslateProvider>().t('txt_send_responce')}",
+                        style: TextStyle(fontSize: 12),
+                      ),
                       if (sentResponses.isNotEmpty) ...[
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: _tabController.index == 1
                                 ? Colors.white.withOpacity(0.3)
@@ -1501,4 +2014,25 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
     _tabController.dispose();
     super.dispose();
   }
+}
+
+PopupMenuItem<String> _buildMenuItem({
+  required String value,
+  required IconData icon,
+  required String label,
+  required Color color,
+}) {
+  return PopupMenuItem<String>(
+    value: value,
+    child: Row(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: TextStyle(color: color, fontWeight: FontWeight.w500),
+        ),
+      ],
+    ),
+  );
 }

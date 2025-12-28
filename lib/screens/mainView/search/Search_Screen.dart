@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../../../providers/translate_provider.dart';
 import '../../../service/colors.dart';
+import '../../story/screens/story_main_view.dart';
 import 'controller/search_provoder.dart';
 
 class SearchHome extends StatefulWidget {
@@ -44,7 +45,7 @@ class _SearchHomeState extends State<SearchHome> {
 
   Future<void> _loadCities() async {
     final provider = SearchProvider();
-    await provider.fetchCities();
+    await provider.fetchCities(context);
     setState(() {
       _cityNames = provider.cities.map((e) => e.cityName).toList();
       _isLoadingCities = false;
@@ -94,7 +95,7 @@ class _SearchHomeState extends State<SearchHome> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 200),
+                    const SizedBox(height: 150),
                     Material(
                       elevation: 8,
                       borderRadius: BorderRadius.circular(24),
@@ -109,6 +110,39 @@ class _SearchHomeState extends State<SearchHome> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            InkWell(onTap:(){
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => StoryMainView(),
+                                ),
+                              );
+                            },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 120, vertical: 6),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF4FA3A5), // teal
+                                      Color(0xFF7ED957), // green
+                                    ],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(30), // pill shape
+                                ),
+                                child: Text(
+                                  "Poxlive",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 12,),
                             Container(
                               decoration: BoxDecoration(
                                 color: cs.surfaceVariant.withOpacity(0.3),
@@ -253,14 +287,14 @@ class _SearchHomeState extends State<SearchHome> {
       onTap: () async {
         FocusScope.of(context).unfocus();
 
-          // Close keyboard
-          FocusScope.of(context).unfocus();
+        // Close keyboard
+        FocusScope.of(context).unfocus();
 
-          // Close all open dropdowns
-          // _fromFieldKey.currentState?._hideDropdown();
-          // _toFieldKey.currentState?._hideDropdown();
-          // _pickupFieldKey.currentState?._hideDropdown();
-          // _dropFieldKey.currentState?._hideDropdown();
+        // Close all open dropdowns
+        // _fromFieldKey.currentState?._hideDropdown();
+        // _toFieldKey.currentState?._hideDropdown();
+        // _pickupFieldKey.currentState?._hideDropdown();
+        // _dropFieldKey.currentState?._hideDropdown();
 
 
         final picked = await showDatePicker(
@@ -403,39 +437,39 @@ class _SearchHomeState extends State<SearchHome> {
           shape: const StadiumBorder(),
           padding: const EdgeInsets.symmetric(vertical: 14),
         ),
-          onPressed: () {
-            if (_selectedTabIndex == 0) {
-              final rideData = {
-                "from": _fromController.text,
-                "to": _toController.text,
-                "date": DateFormat('dd-MM-yyyy').format(_selectedDate),
-                "passengers": _passengerCount,
-              };
-              print("Ride Data: $rideData");
+        onPressed: () {
+          if (_selectedTabIndex == 0) {
+            final rideData = {
+              "from": _fromController.text,
+              "to": _toController.text,
+              "date": DateFormat('dd-MM-yyyy').format(_selectedDate),
+              "passengers": _passengerCount,
+            };
+            print("Ride Data: $rideData");
 
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => RideListScreen(rideData: rideData),
-                ),
-              );
-            } else {
-              final parcelData = {
-                "pickup": _pickupController.text,
-                "drop": _dropController.text,
-                "date": DateFormat("dd-MM-yyyy").format(_selectedDate),
-                "time": _selectedTime?.format(context) ?? "",
-              };
-              print("Parcel Data: $parcelData");
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => RideListScreen(rideData: rideData),
+              ),
+            );
+          } else {
+            final parcelData = {
+              "pickup": _pickupController.text,
+              "drop": _dropController.text,
+              "date": DateFormat("dd-MM-yyyy").format(_selectedDate),
+              "time": _selectedTime?.format(context) ?? "",
+            };
+            print("Parcel Data: $parcelData");
 
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ParcelListScreen(parcelData: parcelData),
-                ),
-              );
-            }
-          },
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ParcelListScreen(parcelData: parcelData),
+              ),
+            );
+          }
+        },
         child: Text(label,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
       ),

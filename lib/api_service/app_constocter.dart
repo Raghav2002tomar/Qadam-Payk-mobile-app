@@ -1,6 +1,6 @@
 class App_Constructor {
   final BaseURL = "https://qadampayk.com";
-  final istestmode = false;
+  final istestmode = true;
 
 
   //auth
@@ -27,8 +27,10 @@ final get_profile = "/api/get-profile";
   final fetchtripridelist = "/api/search-rides";
   final fetchriderequestlist = "/api/all-ride-requests";
   final fetchParcelequestlist = "/api/all-parcel-requests";
+  final updateRide = "/api/driver/edit-ride"; // 🔁 backend endpoint
 
- // driver
+
+  // driver
   final fetchdriverdetail= "/api/driver-details";
   final driverintrestrequest= "/api/driver/interest-request";
 

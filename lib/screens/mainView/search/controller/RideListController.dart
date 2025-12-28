@@ -196,11 +196,15 @@ class RideListProvide extends ChangeNotifier {
   Future<void> fetchDriverDetail(int driverId) async {
     _isLoadingTrips = true;
     notifyListeners();
+    final token = await LocalCache.getToken();
 
     try {
       final url = Uri.parse(
           '${appConstructor.BaseURL}${appConstructor.fetchdriverdetail}?user_id=$driverId');
-      final response = await http.get(url);
+      final response = await http.get(url ,headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer $token", // ✅ Add Bearer token here
+      },);
 
       debugPrint("Driver Detail API URL: $url");
       debugPrint("Driver Detail Response: ${response.statusCode}");
