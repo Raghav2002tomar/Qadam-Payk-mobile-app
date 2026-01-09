@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:hive/hive.dart';
+import '../api_service/logger.dart';
 import '../models/cart_item.dart';
 
 class StorageService {
@@ -23,7 +24,7 @@ class StorageService {
       final List<dynamic> jsonList = jsonDecode(jsonString);
       return jsonList.map((json) => CartItem.fromJson(json)).toList();
     } catch (e) {
-      print('Error loading cart items: $e');
+      appLog('Error loading cart items: $e');
       return [];
     }
   }

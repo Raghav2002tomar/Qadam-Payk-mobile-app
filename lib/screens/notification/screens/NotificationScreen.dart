@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../api_service/logger.dart';
 import '../../../providers/translate_provider.dart';
 import '../../../service/local_cache.dart';
 import '../controller/NotificationController.dart';
@@ -143,7 +144,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
   Widget _newsCard(BuildContext context, AppNotification n) {
     final isSeen = _seenIds.contains(n.id);
-print("Qadam-Payk/public/assets/banner${n.image}");
+appLog("Qadam-Payk/public/assets/banner${n.image}");
     return InkWell(
       onTap: () async {
         await LocalCachenotification.markAsSeen(n.id);

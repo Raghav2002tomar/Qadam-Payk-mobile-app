@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../../api_service/api_serviece.dart';
 import '../../../../api_service/app_constocter.dart';
+import '../../../../api_service/logger.dart';
 import '../../../../service/local_cache.dart'; // ✅ to get token
 
 class PassengerRequestProvider with ChangeNotifier {
@@ -48,7 +49,7 @@ class PassengerRequestProvider with ChangeNotifier {
       double? priceValue = double.tryParse(price.toString()) ?? 0.0;
       request.fields['budget'] = priceValue.toString(); // ✅ sends float like "123.45"
 
-      print("🚀 Sending request with data: ${request.fields}"); // ✅ Debug print
+      appLog("🚀 Sending request with data: ${request.fields}"); // ✅ Debug appLog
 
       // ✅ Send token in headers
       request.headers['Authorization'] = "Bearer $token";

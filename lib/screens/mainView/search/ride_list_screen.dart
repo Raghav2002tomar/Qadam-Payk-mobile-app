@@ -292,7 +292,7 @@ class PassengerRequestCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final imageUrl = request.image != null
         ? "https://qadampayk.com/assets/profile_image/${request.image}" // Replace with your actual base URL
-        : "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDI0LTAxL3Jhd3BpeGVsb2ZmaWNlMTFfcGhvdG9fb2ZfYWZyaWNhbl9hbWVyaWNhbl9tYW5faW5fYnVzaW5lc3Nfc3VpdF9iYmEzZjA3MS1iN2JkLTQ3MjctODA4MC1hYjJmOTIxOGY1OTMucG5n.png";
+        : "https://img.freepik.com/premium-vector/vector-flat-illustration-grayscale-avatar-user-profile-person-icon-gender-neutral-silhouette-profile-picture-suitable-social-media-profiles-icons-screensavers-as-templatex9xa_719432-2210.jpg?semt=ais_hybrid&w=740&q=80";
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -464,7 +464,7 @@ class _DriverInfo extends StatelessWidget {
                     CircleAvatar(
                       radius: 30,
                       backgroundImage: NetworkImage(
-                        "https://qadampayk.com/assets/profile_image/${ride.driverImage}" ?? "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDI0LTAxL3Jhd3BpeGVsb2ZmaWNlMTFfcGhvdG9fb2ZfYWZyaWNhbl9hbWVyaWNhbl9tYW5faW5fYnVzaW5lc3Nfc3VpdF9iYmEzZjA3MS1iN2JkLTQ3MjctODA4MC1hYjJmOTIxOGY1OTMucG5n.png",
+                        "https://qadampayk.com/assets/profile_image/${ride.driverImage}" ?? "https://img.freepik.com/premium-vector/vector-flat-illustration-grayscale-avatar-user-profile-person-icon-gender-neutral-silhouette-profile-picture-suitable-social-media-profiles-icons-screensavers-as-templatex9xa_719432-2210.jpg?semt=ais_hybrid&w=740&q=80",
                       ),
                     ),
 
@@ -490,7 +490,7 @@ class _DriverInfo extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      ride.driverName ?? "Driver Name",
+                      ride.driverName ?? "Driver ",
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 4),

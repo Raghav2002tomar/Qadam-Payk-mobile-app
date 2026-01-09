@@ -6,6 +6,7 @@ import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../../api_service/logger.dart';
 import '../../../service/colors.dart';
 import '../HomeShell.dart';
 import '../ProfileScreen/ViewResponceScreen.dart';
@@ -73,7 +74,7 @@ class _RideScreenState extends State<RideScreen> {
         ride['bookings'] is List &&
         ride['bookings'].length != 0);
 
-    print("HAS BOOKINGS: $_hasBookings");    // 🔹 Detect request type
+    appLog("HAS BOOKINGS: $_hasBookings");    // 🔹 Detect request type
     _departureController.text = ride['pickup_location'] ?? '';
     _destinationController.text = ride['destination'] ?? '';
 

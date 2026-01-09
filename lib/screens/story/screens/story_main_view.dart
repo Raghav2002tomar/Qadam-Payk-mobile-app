@@ -1,23 +1,26 @@
 
-
-
-
-
 import 'dart:async';
+import 'dart:io';
+// import 'dart:nativewrappers/_internal/vm/lib/typed_data_patch.dart';
 import 'package:bla_bla_car/screens/story/screens/story_pager_screen.dart';
+import 'package:fc_native_video_thumbnail/fc_native_video_thumbnail.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+// import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:http/http.dart' as http;
+// import 'package:video_thumbnail/video_thumbnail.dart';
 import 'dart:convert';
-
+import 'dart:typed_data';
 import '../../../api_service/app_constocter.dart';
+import '../../../api_service/logger.dart';
+import '../../../providers/translate_provider.dart';
 import '../../../service/local_cache.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-
+import '../../auth/SignInScreen.dart';
 import 'create_story.dart';
-
-
 /// =======================
 /// CONSTANT MEDIA BASE URL
 /// =======================
@@ -82,6 +85,9 @@ class _StoryMainViewState extends State<StoryMainView> {
   late Future<void> _future;
   List<Story> _myStories = [];
   List<Story> _otherStories = [];
+  final Map<String, Future<Uint8List?>> _videoThumbCache = {};
+  final Map<String, Uint8List> _thumbnailMemoryCache = {};
+  final Set<int> _locallyViewedStories = {};
 
   @override
   void initState() {
@@ -92,10 +98,69 @@ class _StoryMainViewState extends State<StoryMainView> {
   /// =======================
   /// LOAD STORIES SEPARATELY
   /// =======================
+  // Future<void> _loadStories() async {
+  //   final token = await LocalCache.getToken();
+  //   final my = await _fetchMyStories(token!);
+  //   final other = await _fetchOtherStories(token, "", "");
+  //
+  //   if (!mounted) return;
+  //
+  //   setState(() {
+  //     _myStories = my;
+  //     _otherStories = other;
+  //   });
+  // }
   Future<void> _loadStories() async {
     final token = await LocalCache.getToken();
-    _myStories = await _fetchMyStories(token!);
-    _otherStories = await _fetchOtherStories(token, "", "");
+    final loggedIn = await LocalCache.isUserLoggedIn();
+
+    List<Story> my = [];
+    List<Story> other = [];
+
+    if (loggedIn && token != null) {
+      my = await _fetchMyStories(token);
+    }
+
+    other = await _fetchOtherStories(token, "","");
+
+    if (!mounted) return;
+
+    setState(() {
+      _myStories = my;
+      _otherStories = other;
+    });
+
+    await _precacheStoryImages(context);
+
+  }
+
+  Future<void> _precacheStoryImages(BuildContext context) async {
+    final allStories = [..._myStories, ..._otherStories];
+
+    for (final story in allStories) {
+      if (story.type == "photo") {
+        final imageProvider =
+        NetworkImage(STORY_MEDIA_BASE + story.media);
+
+        await precacheImage(imageProvider, context);
+      }
+    }
+  }
+
+  Future<File> downloadVideoFile(String url) async {
+    final tempDir = await getTemporaryDirectory();
+    final filePath = '${tempDir.path}/${url.hashCode}.mp4';
+    final file = File(filePath);
+
+    if (await file.exists()) return file; // use cached file
+
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      await file.writeAsBytes(response.bodyBytes);
+      return file;
+    } else {
+      throw Exception('Failed to download video');
+    }
   }
 
   /// =======================
@@ -119,11 +184,34 @@ class _StoryMainViewState extends State<StoryMainView> {
     return [];
   }
 
+  Future<void> _createStoryOrLogin(BuildContext context) async {
+    final loggedIn = await LocalCache.isUserLoggedIn();
+
+    if (!loggedIn) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const PhoneNumberScreen(),
+        ),
+      );
+      return;
+    }
+
+    // ✅ Navigate to Create Story screen
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const CreateStoryScreen(),
+      ),
+    );
+    _future = _loadStories();
+
+  }
   /// =======================
   /// OTHER STORIES
   /// =======================
   Future<List<Story>> _fetchOtherStories(
-      String token, String route, String city) async {
+      String? token, String route, String city) async {
     final uri = Uri.parse(
         "${App_Constructor().BaseURL}/api/others-stories?route=$route&city=$city");
 
@@ -153,6 +241,210 @@ class _StoryMainViewState extends State<StoryMainView> {
       "Authorization": "Bearer $token",
     });
   }
+  Widget _storyAvatarMedia(Story story) {
+    final mediaUrl = STORY_MEDIA_BASE + story.media;
+
+    /// PHOTO STORY (already fine)
+    if (story.type == "photo") {
+      return CircleAvatar(
+        radius: 30,
+        backgroundImage: NetworkImage(mediaUrl),
+      );
+    }
+
+    /// VIDEO STORY (FIXED)
+    // return ClipOval(
+    //   child: SizedBox(
+    //     width: 60,
+    //     height: 60,
+    //     child: FutureBuilder<Uint8List?>(
+    //       // future: _getVideoThumbnail(mediaUrl),
+    //       future: mediaUrl.toString(),
+    //       builder: (_, snap) {
+    //         if (snap.connectionState == ConnectionState.waiting) {
+    //           return Container(color: Colors.grey.shade300);
+    //         }
+    //
+    //         if (!snap.hasData) {
+    //           return Container(
+    //             color: Colors.black12,
+    //             child: const Icon(
+    //               Icons.video_library,
+    //               color: Colors.white54,
+    //               size: 28,
+    //             ),
+    //           );
+    //         }
+    //
+    //         return Stack(
+    //           fit: StackFit.expand,
+    //           children: [
+    //             Image.memory(
+    //               snap.data!,
+    //               fit: BoxFit.cover,
+    //             ),
+    //             const Center(
+    //               child: Icon(
+    //                 Icons.play_circle_fill,
+    //                 color: Colors.white,
+    //                 size: 28,
+    //               ),
+    //             ),
+    //           ],
+    //         );
+    //       },
+    //     ),
+    //   ),
+    // );
+    // VIDEO (NO THUMBNAIL)
+    // return ClipOval(
+    //   child: Container(
+    //     width: 60,
+    //     height: 60,
+    //     color: Colors.black87,
+    //     child: const Center(
+    //       child: Icon(
+    //         Icons.play_circle_fill,
+    //         color: Colors.white,
+    //         size: 30,
+    //       ),
+    //     ),
+    //   ),
+    // );
+
+    // VIDEO
+    return ClipOval(
+      child: SizedBox(
+        width: 60,
+        height: 60,
+        child: FutureBuilder<Uint8List?>(
+          future: _getVideoThumbnail(mediaUrl),
+          builder: (_, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return Container(color: Colors.grey.shade300);
+            }
+
+            if (!snap.hasData) {
+              return Container(
+                color: Colors.black12,
+                child: const Icon(
+                  Icons.video_library,
+                  color: Colors.white54,
+                  size: 28,
+                ),
+              );
+            }
+
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                Image.memory(
+                  snap.data!,
+                  fit: BoxFit.cover,
+                ),
+                const Center(
+                  child: Icon(
+                    Icons.play_circle_fill,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyStoriesView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.auto_stories,
+              size: 90,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 20),
+             Text(
+              context.watch<TranslateProvider>().t('txt_no_stories'),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+             Text(
+              context.watch<TranslateProvider>().t('txt_story_empty_desc'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 28),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF008955),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.add, color: Colors.white),
+              label:  Text(
+                context.watch<TranslateProvider>().t('txt_create_story'),
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              onPressed: () async {
+                await _createStoryOrLogin (context);
+                _future = _loadStories();
+                setState(() {});
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _noOtherStoriesView() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+      child: Column(
+        children: [
+          Icon(
+            Icons.travel_explore_rounded,
+            size: 120,
+            color: Colors.grey.shade300,
+          ),
+          const SizedBox(height: 20),
+           Text(
+            context.watch<TranslateProvider>().t('txt_no_recent_stories'),
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+           Text(
+            context.watch<TranslateProvider>().t('txt_story_ahead'),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   /// =======================
   /// UI
@@ -160,7 +452,9 @@ class _StoryMainViewState extends State<StoryMainView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Road Stories")),
+      appBar: AppBar(title:  Text(    context.watch<TranslateProvider>().t('txt_road_stories'),
+      )
+      ),
       body: FutureBuilder(
         future: _future,
         builder: (context, snap) {
@@ -174,36 +468,62 @@ class _StoryMainViewState extends State<StoryMainView> {
               setState(() {});
             },
             child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               children: [
-                /// 🔥 TOP STORIES (MY + OTHER)
-                _storyBubbles(),
+                // =========================
+                // STORY BUBBLES (TOP)
+                // =========================
+                if (_myStories.isNotEmpty || _otherStories.isNotEmpty)
+                  _storyBubbles(),
 
-                const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Text(
-                    "Recent Stories",
-                    style:
-                    TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                // =========================
+                // MY STORY EXISTS, OTHERS EMPTY
+                // =========================
+                if (_myStories.isNotEmpty && _otherStories.isEmpty)
+                  _noOtherStoriesView(),
+
+                // =========================
+                // OTHER STORIES EXIST
+                // =========================
+                if (_otherStories.isNotEmpty) ...[
+                   Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Text(
+                      context.watch<TranslateProvider>().t('txt_recent_stories'),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                ),
+                  _storyGrid(_otherStories),
+                ],
 
-                /// 🔥 RECENT STORIES (ONLY OTHER USERS)
-                _storyGrid(_otherStories),
+                // =========================
+                // COMPLETELY EMPTY STATE
+                // =========================
+                if (_myStories.isEmpty && _otherStories.isEmpty)
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.75,
+                    child: _emptyStoriesView(),
+                  ),
               ],
             ),
           );
+
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: const Color(0xFF008955),
         icon: const Icon(Icons.add_a_photo, color: Colors.white),
         label:
-        const Text("New Story", style: TextStyle(color: Colors.white)),
+         Text( context.watch<TranslateProvider>().t('txt_new_story'), style: TextStyle(color: Colors.white)),
         onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const CreateStoryScreen()),
-          );
+          // await Navigator.push(
+          //   context,
+          //   MaterialPageRoute(builder: (_) => const CreateStoryScreen()),
+          // );
+          await _createStoryOrLogin(context);
           _future = _loadStories();
           setState(() {});
         },
@@ -211,17 +531,71 @@ class _StoryMainViewState extends State<StoryMainView> {
     );
   }
 
+  // Future<Uint8List?> getVideoThumbnail(String videoUrl) async {
+  //   try {
+  //     String? videoPath = videoUrl;
+  //
+  //     // iOS workaround: download video first
+  //     if (defaultTargetPlatform == TargetPlatform.iOS) {
+  //       final file = await downloadVideoFile(videoUrl);
+  //       videoPath = file.path;
+  //     }
+  //
+  //     final uint8list = await VideoThumbnail.thumbnailData(
+  //       video: videoPath,
+  //       imageFormat: ImageFormat.JPEG,
+  //       maxWidth: 300,
+  //       quality: 75,
+  //     );
+  //
+  //     return uint8list;
+  //   } catch (e) {
+  //     appLog("Thumbnail error: $e");
+  //     return null;
+  //   }
+  // }
+
+  Future<Uint8List?> _getVideoThumbnail(String videoUrl) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final thumbPath = '${tempDir.path}/${videoUrl.hashCode}.jpg';
+
+      final thumbFile = File(thumbPath);
+      if (await thumbFile.exists()) {
+        return await thumbFile.readAsBytes();
+      }
+
+      final resultPath =
+      await FcNativeVideoThumbnail().getVideoThumbnail(
+        srcFile: videoUrl,     // 🔥 REQUIRED
+        destFile: thumbPath,   // 🔥 REQUIRED
+        width: 400,            // 🔥 REQUIRED
+        height: 400,           // 🔥 REQUIRED
+        quality: 80,
+      );
+
+      if (resultPath == null) return null;
+
+      return await File(resultPath as String).readAsBytes();
+    } catch (e) {
+      appLog("Thumbnail error: $e");
+      return null;
+    }
+  }
+
   /// =======================
   /// STORY BUBBLES
   /// =======================
   Widget _storyBubbles() {
-    // Show only one "My Story" bubble if there are any
-    final topBubbles = <Widget>[];
+    final List<Widget> bubbles = [];
 
+    /// =========================
+    /// MY STORY (ONLY ONE BUBBLE)
+    /// =========================
     if (_myStories.isNotEmpty) {
-      topBubbles.add(
+      bubbles.add(
         GestureDetector(
-          onTap: () => _openStory(_myStories, 0), // Open first story of my stories
+          onTap: () => _openStory(_myStories, 0),
           child: Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Column(
@@ -229,19 +603,11 @@ class _StoryMainViewState extends State<StoryMainView> {
                 CircleAvatar(
                   radius: 33,
                   backgroundColor: Colors.green,
-                  child: CircleAvatar(
-                    radius: 30,
-                    backgroundImage: _myStories[0].type == "photo"
-                        ? NetworkImage(STORY_MEDIA_BASE + _myStories[0].media)
-                        : null,
-                    child: _myStories[0].type == "video"
-                        ? const Icon(Icons.play_circle_fill, color: Colors.white)
-                        : null,
-                  ),
+                  child: _storyAvatarMedia(_myStories[0]),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  "My Story",
+                 Text(
+                  context.watch<TranslateProvider>().t('txt_my_story'),
                   style: TextStyle(fontSize: 12),
                 ),
               ],
@@ -251,14 +617,15 @@ class _StoryMainViewState extends State<StoryMainView> {
       );
     }
 
-    // Add all other users' stories
-    for (var s in _otherStories) {
-      topBubbles.add(
+    /// =========================
+    /// OTHER USERS STORIES
+    /// =========================
+    for (int i = 0; i < _otherStories.length; i++) {
+      final story = _otherStories[i];
+
+      bubbles.add(
         GestureDetector(
-          onTap: () {
-            final index = _otherStories.indexOf(s);
-            _openStory(_otherStories, index);
-          },
+          onTap: () => _openStory(_otherStories, i),
           child: Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Column(
@@ -266,20 +633,13 @@ class _StoryMainViewState extends State<StoryMainView> {
                 CircleAvatar(
                   radius: 33,
                   backgroundColor: Colors.blue,
-                  child: CircleAvatar(
-                    radius: 30,
-                    backgroundImage: s.type == "photo"
-                        ? NetworkImage(STORY_MEDIA_BASE + s.media)
-                        : null,
-                    child: s.type == "video"
-                        ? const Icon(Icons.play_circle_fill, color: Colors.white)
-                        : null,
-                  ),
+                  child: _storyAvatarMedia(story),
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  s.city,
+                  story.city,
                   style: const TextStyle(fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -293,7 +653,19 @@ class _StoryMainViewState extends State<StoryMainView> {
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.all(12),
-        children: topBubbles,
+        children: bubbles,
+      ),
+    );
+  }
+  Widget _imageError() {
+    return Container(
+      color: Colors.grey.shade200,
+      child: const Center(
+        child: Icon(
+          Icons.broken_image_rounded,
+          color: Colors.grey,
+          size: 40,
+        ),
       ),
     );
   }
@@ -322,18 +694,72 @@ class _StoryMainViewState extends State<StoryMainView> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: Stack(
+              fit: StackFit.expand,
               children: [
-                Image.network(
-                  mediaUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                ),
+                /// ======================
+                /// PHOTO
+                /// ======================
+                if (s.type == "photo")
+                  Image.network(
+                    mediaUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _imageError(),
+                  ),
+
+                /// ======================
+                /// VIDEO THUMBNAIL (SAFE)
+                /// ======================
+                if (s.type == "video")
+                  FutureBuilder<Uint8List?>(
+                    future: _getVideoThumbnail(mediaUrl),
+                    builder: (_, snap) {
+                      if (snap.connectionState == ConnectionState.waiting) {
+                        return Container(color: Colors.grey.shade300);
+                      }
+
+                      /// ❗ Thumbnail FAILED → show fallback poster
+                      if (!snap.hasData) {
+                        return Container(
+                          color: Colors.black12,
+                          child: const Center(
+                            child: Icon(
+                              Icons.video_library,
+                              color: Colors.white54,
+                              size: 48,
+                            ),
+                          ),
+                        );
+                      }
+
+                      return Image.memory(
+                        snap.data!,
+                        fit: BoxFit.cover,
+                      );
+                    },
+                  ),
+                  // if (s.type == "video")
+                  //   Container(
+                  //     color: Colors.black87,
+                  //     child: const Center(
+                  //       child: Icon(
+                  //         Icons.play_circle_fill,
+                  //         color: Colors.white,
+                  //         size: 48,
+                  //       ),
+                  //     ),
+                  //   ),
+                /// ======================
+                /// PLAY ICON
+                /// ======================
                 if (s.type == "video")
                   const Positioned(
-                    bottom: 6,
-                    right: 6,
-                    child: Icon(Icons.play_circle_fill,
-                        color: Colors.white, size: 28),
+                    bottom: 8,
+                    right: 8,
+                    child: Icon(
+                      Icons.play_circle_fill,
+                      color: Colors.white,
+                      size: 30,
+                    ),
                   ),
               ],
             ),
@@ -346,9 +772,28 @@ class _StoryMainViewState extends State<StoryMainView> {
   /// =======================
   /// OPEN STORY
   /// =======================
-  void _openStory(List<Story> stories, int index) {
-    if (!stories[index].isMine) {
-      _markViewed(stories[index].id);
+  // void _openStory(List<Story> stories, int index) {
+  //   if (!stories[index].isMine) {
+  //     _markViewed(stories[index].id);
+  //   }
+  //
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (_) => StoryPagerScreen(
+  //         stories: stories,
+  //         initialIndex: index,
+  //       ),
+  //     ),
+  //   );
+  // }
+  void _openStory(List<Story> stories, int index) async {
+    final loggedIn = await LocalCache.isUserLoggedIn();
+    final story = stories[index];
+
+    if (loggedIn && !story.isMine && !_locallyViewedStories.contains(story.id)) {
+      _locallyViewedStories.add(story.id);
+      _markViewed(story.id);
     }
 
     Navigator.push(
@@ -361,5 +806,7 @@ class _StoryMainViewState extends State<StoryMainView> {
       ),
     );
   }
+
+
 }
 

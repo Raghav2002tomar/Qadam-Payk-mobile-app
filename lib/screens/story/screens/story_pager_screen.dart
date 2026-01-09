@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 
+import '../controller/StoryVideoCache.dart';
 import '../controller/story_controller.dart';
 import 'create_story.dart';
 
@@ -30,15 +31,22 @@ class StoryPagerScreen extends StatefulWidget {
 class _StoryPagerScreenState extends State<StoryPagerScreen> {
   late PageController _pageController;
   int _currentIndex = 0;
+   String STORY_MEDIA_BASE = "https://qadampayk.com/assets/story_media/";
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: _currentIndex);
+    // 🔥 Prefetch first NEXT story
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   _prefetchNextStory(_currentIndex);
+    // });
   }
 
   void _nextStory() {
+    StoryVideoCache.pauseAll();
+
     if (_currentIndex < widget.stories.length - 1) {
       _currentIndex++;
       _pageController.animateToPage(
@@ -47,9 +55,30 @@ class _StoryPagerScreenState extends State<StoryPagerScreen> {
         curve: Curves.easeInOut,
       );
     } else {
-      Navigator.of(context).pop();
+      Navigator.pop(context);
     }
   }
+
+
+  void _prefetchNextStory(int index) {
+    if (index + 1 >= widget.stories.length) return;
+
+    final nextStory = widget.stories[index + 1];
+    final media = nextStory.media.toLowerCase();
+
+    // ✅ ONLY prefetch images
+    if (nextStory.type == "photo" &&
+        (media.endsWith('.jpg') ||
+            media.endsWith('.jpeg') ||
+            media.endsWith('.png') ||
+            media.endsWith('.webp'))) {
+      precacheImage(
+        NetworkImage(STORY_MEDIA_BASE + nextStory.media),
+        context,
+      );
+    }
+  }
+
 
   void _prevStory() {
     if (_currentIndex > 0) {
@@ -75,21 +104,29 @@ class _StoryPagerScreenState extends State<StoryPagerScreen> {
     final total = widget.stories.length;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Stack(
           children: [
             PageView.builder(
               controller: _pageController,
               itemCount: total,
-              onPageChanged: (i) => setState(() => _currentIndex = i),
+              // onPageChanged: (i) => setState(() => _currentIndex = i),
+              onPageChanged: (i) {
+                setState(() => _currentIndex = i);
+
+                // 🔥 Prefetch next story
+                _prefetchNextStory(i);
+              },
               itemBuilder: (context, index) {
                 final story = widget.stories[index];
                 return StoryFullView(
+                  key: PageStorageKey(story.id),
                   story: story,
                   onCompleted: _nextStory,
                   onPrevious: _prevStory,
                 );
+
               },
             ),
             // top progress + header
@@ -142,10 +179,27 @@ class _StoryPagerScreenState extends State<StoryPagerScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close, color: Colors.white),
+                      InkWell(onTap: (){
+                        Navigator.pop(context);
+                      },
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
                       ),
+                      SizedBox(width: 10,)
+                      // IconButton(
+                      //   onPressed: () => Navigator.pop(context),
+                      //   icon: const Icon(Icons.close, color: Colors.white),
+                      // ),
                     ],
                   ),
                 ],

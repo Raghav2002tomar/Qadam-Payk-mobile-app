@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../../../../api_service/api_serviece.dart';
 import '../../../../api_service/app_constocter.dart';
+import '../../../../api_service/logger.dart';
 import '../../../../service/local_cache.dart';
 import '../model/ride_model.dart';
 
@@ -57,7 +58,7 @@ class RideListProvide extends ChangeNotifier {
 
       // 🔑 Replace this with your actual token
 
-      debugPrint("Trip List API URL: $url");
+      appLog("Trip List API URL: $url");
 
       final response = await http.get(
         url,
@@ -67,24 +68,24 @@ class RideListProvide extends ChangeNotifier {
         },
       );
 
-      debugPrint("Trip List Response: ${response.statusCode}");
+      appLog("Trip List Response: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['status'] == true) {
           RideList rideListResponse = RideList.fromJson(data);
           _tripList = rideListResponse.data ?? [];
-          debugPrint("✅ Loaded ${_tripList.length} trips");
+          appLog("✅ Loaded ${_tripList.length} trips");
         } else {
           _tripList = [];
-          debugPrint("❌ Trip List API Error: ${data['message']}");
+          appLog("❌ Trip List API Error: ${data['message']}");
         }
       } else {
         _tripList = [];
-        debugPrint("❌ Trip List HTTP Error: ${response.statusCode}");
+        appLog("❌ Trip List HTTP Error: ${response.statusCode}");
       }
     } catch (e) {
-      debugPrint("❌ Error fetching trips: $e");
+      appLog("❌ Error fetching trips: $e");
       _tripList = [];
     }
 
@@ -110,8 +111,8 @@ class RideListProvide extends ChangeNotifier {
 
       final response = await http.get(url);
 
-      debugPrint("Ride Request API URL: $url");
-      debugPrint("Ride Request Response: ${response.statusCode}");
+      appLog("Ride Request API URL: $url");
+      appLog("Ride Request Response: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -124,17 +125,17 @@ class RideListProvide extends ChangeNotifier {
             }
           }
           _rideRequestList = requests;
-          debugPrint("✅ Loaded ${_rideRequestList.length} ride requests");
+          appLog("✅ Loaded ${_rideRequestList.length} ride requests");
         } else {
           _rideRequestList = [];
-          debugPrint("❌ Ride Request API Error: ${data['message']}");
+          appLog("❌ Ride Request API Error: ${data['message']}");
         }
       } else {
         _rideRequestList = [];
-        debugPrint("❌ Ride Request HTTP Error: ${response.statusCode}");
+        appLog("❌ Ride Request HTTP Error: ${response.statusCode}");
       }
     } catch (e) {
-      debugPrint("❌ Error fetching ride requests: $e");
+      appLog("❌ Error fetching ride requests: $e");
       _rideRequestList = [];
     }
 
@@ -160,8 +161,8 @@ class RideListProvide extends ChangeNotifier {
 
       final response = await http.get(url);
 
-      debugPrint("Parcel Request API URL: $url");
-      debugPrint("Parcel Request Response: ${response.statusCode}");
+      appLog("Parcel Request API URL: $url");
+      appLog("Parcel Request Response: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -173,17 +174,17 @@ class RideListProvide extends ChangeNotifier {
             }
           }
           _parcelRequestList = parcelRequests;
-          debugPrint("✅ Loaded ${_parcelRequestList.length} parcel requests");
+          appLog("✅ Loaded ${_parcelRequestList.length} parcel requests");
         } else {
           _parcelRequestList = [];
-          debugPrint("❌ Parcel Request API Error: ${data['message']}");
+          appLog("❌ Parcel Request API Error: ${data['message']}");
         }
       } else {
         _parcelRequestList = [];
-        debugPrint("❌ Parcel Request HTTP Error: ${response.statusCode}");
+        appLog("❌ Parcel Request HTTP Error: ${response.statusCode}");
       }
     } catch (e) {
-      debugPrint("❌ Error fetching parcel requests: $e");
+      appLog("❌ Error fetching parcel requests: $e");
       _parcelRequestList = [];
     }
 
@@ -206,8 +207,8 @@ class RideListProvide extends ChangeNotifier {
       "Authorization": "Bearer $token", // ✅ Add Bearer token here
       },);
 
-      debugPrint("Driver Detail API URL: $url");
-      debugPrint("Driver Detail Response: ${response.statusCode}");
+      appLog("Driver Detail API URL: $url");
+      appLog("Driver Detail Response: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -220,14 +221,14 @@ class RideListProvide extends ChangeNotifier {
           }
         } else {
           _driverData = null;
-          debugPrint("Driver Detail API Error: ${data['message']}");
+          appLog("Driver Detail API Error: ${data['message']}");
         }
       } else {
         _driverData = null;
-        debugPrint("Driver Detail HTTP Error: ${response.statusCode}");
+        appLog("Driver Detail HTTP Error: ${response.statusCode}");
       }
     } catch (e) {
-      debugPrint("Error fetching driver: $e");
+      appLog("Error fetching driver: $e");
       _driverData = null;
     }
 

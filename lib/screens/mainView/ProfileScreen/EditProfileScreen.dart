@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
+import '../../../api_service/logger.dart';
 import '../../../models/UserProfileModel.dart';
 import '../../../service/local_cache.dart';
 import '../../auth/SignInScreen.dart';
@@ -108,7 +109,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
       }
     } catch (e) {
       setState(() => _isLoading = false);
-      debugPrint("Error loading profile: $e");
+      appLog("Error loading profile: $e");
     } finally {
       loginProvider.setLoading(false);
     }
@@ -174,7 +175,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
   }
 
   Future<void> _saveProfile() async {
-    // print(DateFormat('dd-MM-yyyy').format(DateTime.parse(_dobController.text)));
+    // appLog(DateFormat('dd-MM-yyyy').format(DateTime.parse(_dobController.text)));
     final token = await LocalCache.getToken();
     try {
       var request = http.MultipartRequest(
@@ -199,13 +200,13 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
         );
       }
       // ✅ DEBUG LOGGING (Print everything sent)
-      print("🔹 Sending Profile Update Request:");
-      print("Name: ${request.fields['name']}");
-      print("DOB: ${request.fields['dob']}");
-      print("Gender: ${request.fields['gender']}");
-      print("Headers: ${request.headers}");
-      print("Token: $token");
-      print(
+      appLog("🔹 Sending Profile Update Request:");
+      appLog("Name: ${request.fields['name']}");
+      appLog("DOB: ${request.fields['dob']}");
+      appLog("Gender: ${request.fields['gender']}");
+      appLog("Headers: ${request.headers}");
+      appLog("Token: $token");
+      appLog(
         "Files Attached: ${request.files.isNotEmpty ? request.files.map((f) => f.filename).join(", ") : "No File"}",
       );
 
@@ -227,7 +228,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
         setState(() => _isEditing = false);
         _loadProfile(); // Reload profile data
       } else {
-        debugPrint("Error updating profile: ${response.statusCode}");
+        appLog("Error updating profile: ${response.statusCode}");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -239,7 +240,7 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
         );
       }
     } catch (e) {
-      debugPrint("Error updating profile: $e");
+      appLog("Error updating profile: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

@@ -3,6 +3,7 @@ import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import '../../../api_service/logger.dart';
 import '../../../providers/translate_provider.dart';
 import '../../../service/colors.dart';
 import '../../../service/local_cache.dart';
@@ -62,7 +63,7 @@ class _DriverRideStatusScreenState extends State<DriverRideStatusScreen>
         }
       }
     } catch (e) {
-      debugPrint("❌ Exception: $e");
+      appLog("❌ Exception: $e");
     }
     setState(() => _isLoadingRequests = false);
   }
@@ -89,7 +90,7 @@ class _DriverRideStatusScreenState extends State<DriverRideStatusScreen>
         }
       }
     } catch (e) {
-      debugPrint("❌ Exception: $e");
+      appLog("❌ Exception: $e");
     }
     setState(() => _isLoadingBookings = false);
   }

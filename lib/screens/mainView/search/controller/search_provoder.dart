@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../api_service/api_serviece.dart';
 import '../../../../api_service/app_constocter.dart';
+import '../../../../api_service/logger.dart';
 import '../../../../models/CityModel.dart';
 import '../../../../models/carModel.dart';
 
@@ -64,7 +65,7 @@ class SearchProvider extends ChangeNotifier {
         }
       }
     } catch (e) {
-      print("Error fetching cities: $e");
+      appLog("Error fetching cities: $e");
     }
 
     _isLoading = false;
@@ -88,7 +89,7 @@ class SearchProvider extends ChangeNotifier {
         }
       }
     } catch (e) {
-      debugPrint("❌ Error fetching car brands: $e");
+      appLog("❌ Error fetching car brands: $e");
     }
 
     _isLoading = false;
@@ -119,7 +120,7 @@ class SearchProvider extends ChangeNotifier {
         _models = []; // ✅ reset on error
       }
     } catch (e) {
-      debugPrint("❌ Error fetching car models: $e");
+      appLog("❌ Error fetching car models: $e");
       _models = []; // ✅ reset on exception
     }
 
@@ -149,7 +150,7 @@ class SearchProvider extends ChangeNotifier {
         _services = [];
       }
     } catch (e) {
-      debugPrint("❌ Error fetching services: $e");
+      appLog("❌ Error fetching services: $e");
       _services = [];
     }
 
@@ -203,7 +204,7 @@ class SearchProvider extends ChangeNotifier {
         );
       }
     } catch (e) {
-      debugPrint("❌ Error adding vehicle: $e");
+      appLog("❌ Error adding vehicle: $e");
       rethrow;
     } finally {
       _isLoading = false;
@@ -262,7 +263,7 @@ class SearchProvider extends ChangeNotifier {
         );
       }
     } catch (e) {
-      debugPrint("❌ Error updating vehicle");
+      appLog("❌ Error updating vehicle");
       rethrow;
     } finally {
       _isLoading = false;
@@ -302,7 +303,7 @@ class SearchProvider extends ChangeNotifier {
         _vehicles = [];
       }
     } catch (e) {
-      debugPrint("❌ Error fetching vehicles: $e");
+      appLog("❌ Error fetching vehicles: $e");
       _vehicles = [];
     } finally {
       _isLoadingVehicles = false;
@@ -361,7 +362,7 @@ class SearchProvider extends ChangeNotifier {
         throw Exception("Failed to publish ride: ${response.body}");
       }
     } catch (e) {
-      debugPrint("❌ Error publishing ride: $e");
+      appLog("❌ Error publishing ride: $e");
       rethrow;
     }
   }
@@ -420,7 +421,7 @@ class SearchProvider extends ChangeNotifier {
         throw Exception("Failed to update ride: ${response.body}");
       }
     } catch (e) {
-      debugPrint("❌ Error updating ride: $e");
+      appLog("❌ Error updating ride: $e");
       rethrow;
     }
   }

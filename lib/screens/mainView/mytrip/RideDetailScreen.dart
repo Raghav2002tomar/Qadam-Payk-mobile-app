@@ -7,6 +7,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
 import 'package:dotted_line/dotted_line.dart';
 import 'package:provider/provider.dart';
+import '../../../api_service/logger.dart';
 import '../../../service/colors.dart';
 import '../../../service/local_cache.dart';
 import '../create/DriverProfileScreen.dart';
@@ -44,11 +45,11 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
         },
       );
 
-      debugPrint("Ride Detail API Status: ${response.statusCode}");
+      appLog("Ride Detail API Status: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        debugPrint("🔍 Full API Response: ${response.body}"); // Debug full response
+        appLog("🔍 Full API Response: ${response.body}"); // Debug full response
 
         if (data["status"] == true) {
           setState(() {
@@ -58,13 +59,13 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
 
           // 🔍 Debug each driver data
           for (int i = 0; i < _drivers.length; i++) {
-            debugPrint("🚗 Driver $i: ${_drivers[i]}");
-            debugPrint("📱 Driver $i ID fields: driver_id=${_drivers[i]['driver_id']}, user_id=${_drivers[i]['user_id']}, name=${_drivers[i]['name']}");
+            appLog("🚗 Driver $i: ${_drivers[i]}");
+            appLog("📱 Driver $i ID fields: driver_id=${_drivers[i]['driver_id']}, user_id=${_drivers[i]['user_id']}, name=${_drivers[i]['name']}");
           }
         }
       }
     } catch (e) {
-      debugPrint("❌ Ride Detail API Error: $e");
+      appLog("❌ Ride Detail API Error: $e");
     }
 
     setState(() => _isLoading = false);
@@ -98,8 +99,8 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
       var streamedResponse = await request.send();
       var response = await http.Response.fromStream(streamedResponse);
 
-      debugPrint("📤 Response Status: ${response.statusCode}");
-      debugPrint("📥 Response Body: ${response.body}");
+      appLog("📤 Response Status: ${response.statusCode}");
+      appLog("📥 Response Body: ${response.body}");
 
       final data = json.decode(response.body);
 
@@ -158,7 +159,7 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
     if (driver['driver_id'] != null) {
       return int.tryParse(driver['driver_id'].toString()) ?? 0;
     } else {
-      debugPrint("⚠️ Warning: No driver_id found in driver data: $driver");
+      appLog("⚠️ Warning: No driver_id found in driver data: $driver");
       return 0; // fallback
     }
   }
@@ -444,20 +445,20 @@ class _RideDetailScreenState extends State<RideDetailScreen> {
   Widget _buildDriverCard(Map<String, dynamic> driver, int index) {
     final imageUrl = driver['image'] != null
         ? "https://qadampayk.com/assets/profile_image/${driver['image']}"
-        : "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDI0LTAxL3Jhd3BpeGVsb2ZmaWNlMTFfcGhvdG9fb2ZfYWZyaWNhbl9hbWVyaWNhbl9tYW5faW5fYnVzaW5lc3Nfc3VpdF9iYmEzZjA3MS1iN2JkLTQ3MjctODA4MC1hYjJmOTIxOGY1OTMucG5n.png";
+        : "https://img.freepik.com/premium-vector/vector-flat-illustration-grayscale-avatar-user-profile-person-icon-gender-neutral-silhouette-profile-picture-suitable-social-media-profiles-icons-screensavers-as-templatex9xa_719432-2210.jpg?semt=ais_hybrid&w=740&q=80";
 
     final driverId = getDriverId(driver);
 
     // 🔍 Debug log for each driver card
-    debugPrint("🚗 Building card for driver $index:");
-    debugPrint("   - Name: ${driver['name']}");
-    debugPrint("   - Driver ID: $driverId");
-    debugPrint("   - Raw driver data: $driver");
+    appLog("🚗 Building card for driver $index:");
+    appLog("   - Name: ${driver['name']}");
+    appLog("   - Driver ID: $driverId");
+    appLog("   - Raw driver data: $driver");
 
     return InkWell(
       onTap: () {
-        debugPrint("🔥 Clicked driver $index with ID: $driverId");
-        debugPrint("🔥 Full driver data: $driver");
+        appLog("🔥 Clicked driver $index with ID: $driverId");
+        appLog("🔥 Full driver data: $driver");
 
         // Navigate to driver profile with driver ID
         Navigator.push(

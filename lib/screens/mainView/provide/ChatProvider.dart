@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
+import '../../../api_service/logger.dart';
 import '../../../service/local_cache.dart';
 import '../../auth/SignInScreen.dart';
 import '../chat/ChatConversationScreen.dart';
@@ -61,9 +62,9 @@ class ChatProvider extends ChangeNotifier {
             "Server Error: ${response.statusCode} - ${response.reasonPhrase}");
       }
     } on SocketException {
-      debugPrint("No Internet connection");
+      appLog("No Internet connection");
     } catch (e) {
-      debugPrint("Unexpected error fetching conversations: $e");
+      appLog("Unexpected error fetching conversations: $e");
     } finally {
       _loading = false;
       notifyListeners();
@@ -129,7 +130,7 @@ class ChatProvider extends ChangeNotifier {
         );
       }
     } catch (e) {
-      debugPrint("Error starting chat: $e");
+      appLog("Error starting chat: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Something went wrong")),
       );

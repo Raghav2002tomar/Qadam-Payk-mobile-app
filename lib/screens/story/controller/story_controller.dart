@@ -71,7 +71,7 @@
 //
 //       final compressedSize =
 //           uploadFile.lengthSync() / (1024 * 1024);
-//       print("📦 Upload size: ${compressedSize.toStringAsFixed(2)} MB");
+//       appLog("📦 Upload size: ${compressedSize.toStringAsFixed(2)} MB");
 //
 //       final uri = Uri.parse("${App_Constructor().BaseURL}/api/stories");
 //       final request = http.MultipartRequest("POST", uri);
@@ -104,13 +104,13 @@
 //       final response = await request.send();
 //       final body = await http.Response.fromStream(response);
 //
-//       print("✅ Status: ${response.statusCode}");
-//       print(body.body);
+//       appLog("✅ Status: ${response.statusCode}");
+//       appLog(body.body);
 //
 //       return response.statusCode == 200 ||
 //           response.statusCode == 201;
 //     } catch (e) {
-//       print("❌ Upload error: $e");
+//       appLog("❌ Upload error: $e");
 //       return false;
 //     } finally {
 //       VideoCompress.deleteAllCache();
@@ -130,6 +130,8 @@ import 'package:path/path.dart';
 import 'package:video_compress/video_compress.dart';
 
 import 'package:bla_bla_car/api_service/app_constocter.dart';
+
+import '../../../api_service/logger.dart';
 
 class StoryRepo {
   StoryRepo._();
@@ -197,6 +199,49 @@ class StoryRepo {
     return info.file!;
   }
 
+
+  static Future<bool> uploadImageNormal({
+    required String token,
+    required File file,
+    required String route,
+    required String city,
+    required String description,
+    required String category,
+  }) async {
+    try {
+      final uri = Uri.parse("${App_Constructor().BaseURL}/api/stories");
+      final request = http.MultipartRequest("POST", uri);
+
+      request.headers.addAll({
+        "Authorization": "Bearer $token",
+        "Accept": "application/json",
+      });
+
+      request.fields.addAll({
+        "type": "photo",
+        "route": route,
+        "city": city,
+        "description": description,
+        "category": category,
+      });
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          "media", // IMPORTANT: backend expects "media"
+          file.path,
+          filename: basename(file.path),
+        ),
+      );
+
+      final response = await request.send();
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      appLog("❌ Image upload error: $e");
+      return false;
+    }
+  }
+
+
   // ==========================================================
   // 🚀 STORY UPLOAD (CHUNKED & SAFE)
   // ==========================================================
@@ -221,17 +266,17 @@ class StoryRepo {
       final uploadId =
           "story_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(9999)}";
 
-      print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-      print("📤 STORY UPLOAD START");
-      print("📁 File Path       : ${file.path}");
-      print("📄 File Name       : $fileName");
-      print("📎 File Extension  : $fileExt");
-      print("📦 File Size       : $fileSize bytes");
-      print("🧩 Total Chunks    : $totalChunks");
-      print("📏 Chunk Size      : $_chunkSize bytes");
-      print("🎞 Media Type      : $mediaType");
-      print("🆔 Upload ID       : $uploadId");
-      print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      appLog("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      appLog("📤 STORY UPLOAD START");
+      appLog("📁 File Path       : ${file.path}");
+      appLog("📄 File Name       : $fileName");
+      appLog("📎 File Extension  : $fileExt");
+      appLog("📦 File Size       : $fileSize bytes");
+      appLog("🧩 Total Chunks    : $totalChunks");
+      appLog("📏 Chunk Size      : $_chunkSize bytes");
+      appLog("🎞 Media Type      : $mediaType");
+      appLog("🆔 Upload ID       : $uploadId");
+      appLog("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
       final raf = file.openSync(mode: FileMode.read);
 
@@ -243,13 +288,13 @@ class StoryRepo {
         raf.setPositionSync(start);
         final bytes = raf.readSync(end - start);
 
-        print("\n⬆️ UPLOADING CHUNK ${i + 1}/$totalChunks");
-        print("   ↳ Chunk Index   : $i");
-        print("   ↳ Start Byte    : $start");
-        print("   ↳ End Byte      : $end");
-        print("   ↳ Bytes Length  : ${bytes.length}");
-        print("   ↳ Is Last Chunk : $isLast");
-        print("   ↳ Chunk File Path : ${basename(file.path)}");
+        appLog("\n⬆️ UPLOADING CHUNK ${i + 1}/$totalChunks");
+        appLog("   ↳ Chunk Index   : $i");
+        appLog("   ↳ Start Byte    : $start");
+        appLog("   ↳ End Byte      : $end");
+        appLog("   ↳ Bytes Length  : ${bytes.length}");
+        appLog("   ↳ Is Last Chunk : $isLast");
+        appLog("   ↳ Chunk File Path : ${basename(file.path)}");
 
         final request = http.MultipartRequest("POST", uri);
 
@@ -259,12 +304,12 @@ class StoryRepo {
           "Accept": "application/json",
         });
 
-        print("📨 Headers:");
-        request.headers.forEach((k, v) => print("   $k : $v"));
+        appLog("📨 Headers:");
+        request.headers.forEach((k, v) => appLog("   $k : $v"));
 
         // FIELDS
         request.fields.addAll({
-          "type": mediaType,
+          "type": mediaType == "image" ? "photo" : "video",
           "upload_id": uploadId,
           "chunk_index": i.toString(),
           "total_chunks": totalChunks.toString(),
@@ -281,8 +326,8 @@ class StoryRepo {
           });
         }
 
-        print("📄 Fields:");
-        request.fields.forEach((k, v) => print("   $k : $v"));
+        appLog("📄 Fields:");
+        request.fields.forEach((k, v) => appLog("   $k : $v"));
 
         // // FILE: Attach every chunk (important fix)
         request.files.add(
@@ -293,53 +338,38 @@ class StoryRepo {
           ),
         );
 
-        // FILE (ONLY ON LAST CHUNK)
-        // if (isLast) {
-        //   print("📎 Attaching FILE on LAST chunk");
-        //   request.files.add(
-        //     http.MultipartFile.fromBytes(
-        //       "chunk", // must be "chunk" to match backend
-        //       bytes,
-        //       filename: basename(file.path),
-        //     ),
-        //   );
-        // } else {
-        //   print("📎 No file attached (not last chunk)");
-        // }
-
-
-        print("📎 Attaching FILE (chunk) | Files Count: ${request.files.length}");
+        appLog("📎 Attaching FILE (chunk) | Files Count: ${request.files.length}");
 
         final response = await request.send();
         final responseBody = await response.stream.bytesToString();
 
-        print("✅ RESPONSE RECEIVED");
-        print("   ↳ Status Code  : ${response.statusCode}");
-        print("   ↳ Response    : $responseBody");
+        appLog("✅ RESPONSE RECEIVED");
+        appLog("   ↳ Status Code  : ${response.statusCode}");
+        appLog("   ↳ Response    : $responseBody");
 
         if (response.statusCode != 200 && response.statusCode != 201) {
           throw Exception("❌ Upload failed at chunk $i");
         }
 
         final percent = ((i + 1) / totalChunks) * 100;
-        print("📊 Progress      : ${percent.toStringAsFixed(2)}%");
+        appLog("📊 Progress      : ${percent.toStringAsFixed(2)}%");
 
         onProgress(percent);
 
-        print("──────────────────────────────────────");
+        appLog("──────────────────────────────────────");
       }
 
       raf.closeSync();
       await VideoCompress.deleteAllCache();
 
-      print("🎉 STORY UPLOAD COMPLETED SUCCESSFULLY");
-      print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      appLog("🎉 STORY UPLOAD COMPLETED SUCCESSFULLY");
+      appLog("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
       return true;
     } catch (e, st) {
-      print("❌ STORY UPLOAD ERROR");
-      print("❌ Error: $e");
-      print("📛 StackTrace: $st");
+      appLog("❌ STORY UPLOAD ERROR");
+      appLog("❌ Error: $e");
+      appLog("📛 StackTrace: $st");
       return false;
     }
   }

@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../../api_service/logger.dart';
 import '../../../providers/translate_provider.dart' show TranslateProvider;
 import '../../../service/bad_words.dart';
 import '../../../service/colors.dart';
@@ -161,11 +162,11 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
           }
         }
       } else {
-        debugPrint("Failed to load messages: ${response.body}");
+        appLog("Failed to load messages: ${response.body}");
         if (!silent && mounted) setState(() => _loading = false);
       }
     } catch (e) {
-      debugPrint("Error fetching messages: $e");
+      appLog("Error fetching messages: $e");
       if (!silent && mounted) setState(() => _loading = false);
     }
   }
@@ -189,7 +190,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         });
       }
     } catch (e) {
-      debugPrint("Check blocked error: $e");
+      appLog("Check blocked error: $e");
     }
   }
 
@@ -236,7 +237,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   //       }
   //     }
   //   } catch (e) {
-  //     debugPrint("Send message error: $e");
+  //     appLog("Send message error: $e");
   //     // Optionally show error to user
   //     if (mounted) {
   //       ScaffoldMessenger.of(context).showSnackBar(
@@ -304,7 +305,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         }
       }
     } catch (e) {
-      debugPrint("Send message error: $e");
+      appLog("Send message error: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to send message')),
@@ -337,15 +338,15 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
         if (result["status"] == true) {
-          debugPrint("✅ Conversation marked as read");
+          appLog("✅ Conversation marked as read");
         } else {
-          debugPrint("⚠️ Mark read failed: ${result["message"]}");
+          appLog("⚠️ Mark read failed: ${result["message"]}");
         }
       } else {
-        debugPrint("❌ Mark read API error: ${response.body}");
+        appLog("❌ Mark read API error: ${response.body}");
       }
     } catch (e) {
-      debugPrint("❌ Mark read exception: $e");
+      appLog("❌ Mark read exception: $e");
     }
   }
   void _findOtherUserId() {
@@ -392,7 +393,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         );
       }
     } catch (e) {
-      debugPrint("Block user error: $e");
+      appLog("Block user error: $e");
     }
   }
   Future<void> _unblockUser() async {
@@ -424,7 +425,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
 
       }
     } catch (e) {
-      debugPrint("Unblock user error: $e");
+      appLog("Unblock user error: $e");
     }
   }
 
@@ -480,7 +481,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         );
       }
     } catch (e) {
-      debugPrint("Report error: $e");
+      appLog("Report error: $e");
     }
   }
 
@@ -593,7 +594,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         );
       }
     } catch (e) {
-      debugPrint("Report chat error: $e");
+      appLog("Report chat error: $e");
     }
   }
 

@@ -194,7 +194,7 @@ class OrderDetailScreen extends StatelessWidget {
                                 radius: 30,
                                 backgroundImage: NetworkImage(
                                   "https://qadampayk.com/assets/profile_image/${ride.driverImage}" ??
-                                      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+                                      'https://img.freepik.com/premium-vector/vector-flat-illustration-grayscale-avatar-user-profile-person-icon-gender-neutral-silhouette-profile-picture-suitable-social-media-profiles-icons-screensavers-as-templatex9xa_719432-2210.jpg?semt=ais_hybrid&w=740&q=80',
                                 ),
                               ),
                            if(ride.driverStatus.toString() =="verified")   Positioned(
@@ -226,7 +226,7 @@ class OrderDetailScreen extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  ride.driverName ?? "",
+                                  ride.driverName ?? "Driver ",
                                   style: GoogleFonts.inter(
                                     fontSize: 17,
                                     fontWeight: FontWeight.w600,

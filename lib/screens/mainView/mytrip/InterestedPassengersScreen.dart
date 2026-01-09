@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
+import '../../../api_service/logger.dart';
 import '../../../providers/translate_provider.dart';
 import '../../../service/colors.dart';
 import '../../../service/local_cache.dart';
@@ -53,7 +54,7 @@ class _InterestedPassengersScreenState
         }
       }
     } catch (e) {
-      debugPrint("❌ Error fetching bookings: $e");
+      appLog("❌ Error fetching bookings: $e");
     }
     setState(() => _loading = false);
   }
@@ -89,7 +90,7 @@ class _InterestedPassengersScreenState
         }
       }
     } catch (e) {
-      debugPrint("❌ Update booking error: $e");
+      appLog("❌ Update booking error: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Something went wrong!")),
       );

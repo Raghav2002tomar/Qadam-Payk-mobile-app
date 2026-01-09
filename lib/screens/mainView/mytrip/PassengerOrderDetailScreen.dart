@@ -13,6 +13,7 @@ import 'package:provider/provider.dart';
 
 import '../../../api_service/api_serviece.dart';
 import '../../../api_service/app_constocter.dart';
+import '../../../api_service/logger.dart';
 import '../../../service/local_cache.dart';
 import '../../auth/SignInScreen.dart';
 import '../ProfileScreen/ViewResponceScreen.dart';
@@ -48,8 +49,8 @@ class PassengerOrderDetailScreen extends StatelessWidget {
         },
       );
 
-      debugPrint("API Status Code: ${response.statusCode}");
-      debugPrint("API Response: ${response.body}");
+      appLog("API Status Code: ${response.statusCode}");
+      appLog("API Response: ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
@@ -76,7 +77,7 @@ class PassengerOrderDetailScreen extends StatelessWidget {
         );
       }
     } catch (e) {
-      debugPrint("❌ API Error: $e");
+      appLog("❌ API Error: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.read<TranslateProvider>().t('txt_failed_to_send'))),
       );
@@ -135,7 +136,7 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                                 backgroundImage: NetworkImage(
                                   request.image != null
                                       ? "https://qadampayk.com/assets/profile_image/${request.image}"
-                                      : "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDI0LTAxL3Jhd3BpeGVsb2ZmaWNlMTFfcGhvdG9fb2ZfYWZyaWNhbl9hbWVyaWNhbl9tYW5faW5fYnVzaW5lc3Nfc3VpdF9iYmEzZjA3MS1iN2JkLTQ3MjctODA4MC1hYjJmOTIxOGY1OTMucG5n.png",
+                                      : "https://img.freepik.com/premium-vector/vector-flat-illustration-grayscale-avatar-user-profile-person-icon-gender-neutral-silhouette-profile-picture-suitable-social-media-profiles-icons-screensavers-as-templatex9xa_719432-2210.jpg?semt=ais_hybrid&w=740&q=80",
                                 ),
                               ),
 
@@ -307,7 +308,7 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                   // Driver Info Card
                   InkWell(
                     onTap: () {
-                      print("fghjklkjnb");
+                      appLog("fghjklkjnb");
                     },
                     child: Container(
                       padding: const EdgeInsets.all(16),
@@ -320,7 +321,7 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                                 radius: 30,
                                 backgroundImage: NetworkImage(
                                   "https://qadampayk.com/assets/profile_image/${request.fullImageUrl}" ??
-                                      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+                                      'https://img.freepik.com/premium-vector/vector-flat-illustration-grayscale-avatar-user-profile-person-icon-gender-neutral-silhouette-profile-picture-suitable-social-media-profiles-icons-screensavers-as-templatex9xa_719432-2210.jpg?semt=ais_hybrid&w=740&q=80',
                                 ),
                               ),
                             if(request.idVerified =="1")  Positioned(
@@ -383,7 +384,7 @@ class PassengerOrderDetailScreen extends StatelessWidget {
                           ),
                           InkWell(
                             onTap: () {
-                              print("fdsdf");
+                              appLog("fdsdf");
                             },
                             child: const Icon(
                               Icons.arrow_forward_ios,

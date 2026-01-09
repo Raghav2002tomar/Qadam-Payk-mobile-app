@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import '../../../api_service/logger.dart';
 import '../../../providers/translate_provider.dart';
 import '../../../service/local_cache.dart';
 import '../../auth/SignInScreen.dart';
@@ -139,7 +140,7 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
         body: jsonEncode(body),
       );
 
-      print("📦 Delete Response: ${response.body}");
+      appLog("📦 Delete Response: ${response.body}");
 
       final json = jsonDecode(response.body);
 
@@ -174,7 +175,7 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
         );
       }
     } catch (e, s) {
-      print("⚠️ Delete Error: $e\n$s");
+      appLog("⚠️ Delete Error: $e\n$s");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString())),
       );
@@ -214,7 +215,7 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
         body: jsonEncode(body),
       );
 
-      print("📦 Cancel Response: ${response.body}");
+      appLog("📦 Cancel Response: ${response.body}");
 
       final json = jsonDecode(response.body);
 
@@ -249,7 +250,7 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
         );
       }
     } catch (e, s) {
-      print("⚠️ Cancel Error: $e\n$s");
+      appLog("⚠️ Cancel Error: $e\n$s");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString())),
       );
@@ -354,8 +355,8 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
         headers: headers,
       );
 
-      print("📦 Received Response Body: ${receivedRes.body}");
-      print("📦 Sent Response Body: ${sentRes.body}");
+      appLog("📦 Received Response Body: ${receivedRes.body}");
+      appLog("📦 Sent Response Body: ${sentRes.body}");
 
       // Check authentication first
       final receivedJson = jsonDecode(receivedRes.body);
@@ -412,12 +413,12 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
         }
       } else {
         setState(() => loading = false);
-        print(
+        appLog(
           "⚠️ Failed to fetch responses. Status codes - Received: ${receivedRes.statusCode}, Sent: ${sentRes.statusCode}",
         );
       }
     } catch (e, s) {
-      print("⚠️ Error fetching responses: $e\n$s");
+      appLog("⚠️ Error fetching responses: $e\n$s");
       setState(() => loading = false);
     }
   }
@@ -507,7 +508,7 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
   void _openChat(Map<String, dynamic> booking) async {
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
 
-    print("💬 Open chat with ${booking['passenger_id']}");
+    appLog("💬 Open chat with ${booking['passenger_id']}");
     final driverId = booking['passenger_id'];
     final driverName = "${booking['passenger_name']}";
     if (driverId == null) return;
@@ -675,7 +676,7 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
     bool isRideBooking,
     ThemeData theme,
   ) {
-    print("Status--------${status}");
+    appLog("Status--------${status}");
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -807,7 +808,7 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
 
       if (res.statusCode == 200) _fetchResponses();
     } catch (e) {
-      print("Error starting ride: $e");
+      appLog("Error starting ride: $e");
     }
   }
 
@@ -827,7 +828,7 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
 
       if (res.statusCode == 200) _fetchResponses();
     } catch (e) {
-      print("Error ending ride: $e");
+      appLog("Error ending ride: $e");
     }
   }
 
@@ -1484,12 +1485,12 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
             //   icon: Icons.chat_bubble_outline,
             //   color: theme.colorScheme.primary,
             //   onPressed: ()async {
-            //     print("ghjkl");
+            //     appLog("ghjkl");
             //     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
             //     final driverId = driver['driver_id'];
             //     final driverName = "${driver['driver_name']}";
             //     if (driverId == null) return;
-            //     print("ghjkl");
+            //     appLog("ghjkl");
             //
             //     await chatProvider.startChat(
             //       context: context,
@@ -1567,7 +1568,7 @@ class _ViewresponcescreenState extends State<Viewresponcescreen>
 
   Widget _buildSentTab() {
     final theme = Theme.of(context);
-    print("---------======== ${sentResponses.length}");
+    appLog("---------======== ${sentResponses.length}");
 
     if (sentResponses.isEmpty) {
       return Center(

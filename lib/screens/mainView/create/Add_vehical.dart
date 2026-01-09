@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../../api_service/logger.dart';
 import '../HomeShell.dart';
 import '../search/controller/search_provoder.dart';
 import 'VehicleStorage.dart';
@@ -356,7 +357,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
                             fit: BoxFit.cover,
                             width: double.infinity,
                             errorBuilder: (context, error, stackTrace) {
-                              print("Image Load Error: $error");
+                              appLog("Image Load Error: $error");
                               return Center(
                                 child: Icon(Icons.broken_image,
                                     size: 40, color: Colors.red),

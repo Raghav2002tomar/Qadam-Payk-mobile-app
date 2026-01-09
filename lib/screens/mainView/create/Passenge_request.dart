@@ -7,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../../api_service/logger.dart';
 import '../../../service/colors.dart';
 import '../ProfileScreen/ViewResponceScreen.dart';
 import '../search/controller/search_provoder.dart';
@@ -88,7 +89,7 @@ class _PassengerRequestScreenState extends State<PassengerRequestScreen> {
         data['bookings'] is List &&
         data['bookings'].length != 0);
 
-    print("HAS BOOKINGS: $_hasBookings");    // 🔹 Detect request type
+    appLog("HAS BOOKINGS: $_hasBookings");    // 🔹 Detect request type
     final bool isParcelRequest = data['parcel_details'] != null;
 
     setState(() {

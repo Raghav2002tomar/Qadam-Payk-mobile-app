@@ -6,8 +6,11 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 
+import '../../../api_service/logger.dart';
 import '../../../providers/translate_provider.dart';
 import '../../../service/colors.dart';
+import '../../../service/local_cache.dart';
+import '../../auth/SignInScreen.dart';
 import '../../story/screens/story_main_view.dart';
 import 'controller/search_provoder.dart';
 
@@ -50,6 +53,26 @@ class _SearchHomeState extends State<SearchHome> {
       _cityNames = provider.cities.map((e) => e.cityName).toList();
       _isLoadingCities = false;
     });
+  }
+  Future<void> _openStoryOrLogin(BuildContext context) async {
+    final loggedIn = await LocalCache.isUserLoggedIn();
+
+    if (!loggedIn) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const PhoneNumberScreen(), // or SignInScreen
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => StoryMainView(),
+      ),
+    );
   }
 
   @override
@@ -110,14 +133,16 @@ class _SearchHomeState extends State<SearchHome> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            InkWell(onTap:(){
+                            InkWell( onTap: (){
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => StoryMainView(),
+                                  builder: (_) => StoryMainView(),
                                 ),
                               );
-                            },
+                      },
+                      // _openStoryOrLogin(context),
+
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 120, vertical: 6),
                                 decoration: BoxDecoration(
@@ -445,7 +470,7 @@ class _SearchHomeState extends State<SearchHome> {
               "date": DateFormat('dd-MM-yyyy').format(_selectedDate),
               "passengers": _passengerCount,
             };
-            print("Ride Data: $rideData");
+            appLog("Ride Data: $rideData");
 
             Navigator.push(
               context,
@@ -460,7 +485,7 @@ class _SearchHomeState extends State<SearchHome> {
               "date": DateFormat("dd-MM-yyyy").format(_selectedDate),
               "time": _selectedTime?.format(context) ?? "",
             };
-            print("Parcel Data: $parcelData");
+            appLog("Parcel Data: $parcelData");
 
             Navigator.push(
               context,

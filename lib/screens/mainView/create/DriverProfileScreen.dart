@@ -80,13 +80,13 @@ class DriverProfileScreen extends StatelessWidget {
   }
   // 🔹 Profile Card
   Widget _buildProfileCard(BuildContext context, Map<String, dynamic> data) {
-    final name = data['name'] ?? '';
+    final name = data['name'] ?? 'Driver ';
     final rating = data['driver_rating'] ?? '4.5';
     final dobString = data['dob'];
-    final vehicle = data['vehicle_type'] ?? 'Ambassador';
+    final vehicle = "${data['brand']}, ${data['model']} " ?? '';
     final image = data['image'] != null
         ? "https://qadampayk.com/assets/profile_image/${data['image']}"
-        : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop&crop=face';
+        : 'https://img.freepik.com/premium-vector/vector-flat-illustration-grayscale-avatar-user-profile-person-icon-gender-neutral-silhouette-profile-picture-suitable-social-media-profiles-icons-screensavers-as-templatex9xa_719432-2210.jpg?semt=ais_hybrid&w=740&q=80';
 
     // Calculate age
     String ageText = '22 ${context.watch<TranslateProvider>().t('txt_y/o')}';
@@ -297,7 +297,7 @@ class DriverProfileScreen extends StatelessWidget {
   // 🔹 Stats Card
   Widget _buildStatsCard(Map<String, dynamic> data, TranslateProvider translate) {
     final rides = data['ride_count'] ?? 58;
-    final memberSince = data['member_since'] ?? "March 2020";
+    final memberSince = data['member_since'] ?? "March 2025";
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

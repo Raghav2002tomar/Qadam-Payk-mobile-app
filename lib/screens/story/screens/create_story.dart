@@ -5,9 +5,13 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mime/mime.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
+import 'package:video_trimmer/video_trimmer.dart';
 
+import '../../../api_service/logger.dart';
+import '../../../main.dart';
 import '../../../providers/translate_provider.dart';
 import '../../../service/colors.dart';
 import '../../../service/local_cache.dart';
@@ -77,6 +81,45 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     );
   }
 
+  Future<File> copyVideoToTemp(File original) async {
+    final Directory tempDir = await Directory.systemTemp.createTemp('story_video_');
+    final String newPath =
+        '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.mp4';
+
+    return original.copy(newPath);
+  }
+
+  Future<File> trimVideoTo30Sec(File inputFile) async {
+    final Trimmer trimmer = Trimmer();
+
+    await trimmer.loadVideo(videoFile: inputFile);
+
+    final int durationMs =
+        trimmer.videoPlayerController!.value.duration.inMilliseconds;
+
+    // 🔥 ALWAYS return a NEW FILE (critical for VideoPlayer)
+    if (durationMs <= 30000) {
+      return await copyVideoToTemp(inputFile);
+    }
+
+    final Completer<File> completer = Completer<File>();
+
+    await trimmer.saveTrimmedVideo(
+      startValue: 0,
+      endValue: 30,
+      storageDir: StorageDir.temporaryDirectory,
+      onSave: (String? outputPath) async {
+        if (outputPath == null) {
+          completer.complete(await copyVideoToTemp(inputFile));
+        } else {
+          completer.complete(File(outputPath));
+        }
+      },
+    );
+
+    return completer.future;
+  }
+
   Future<void> _startVideo() async {
     if (_cameraController == null) return;
     if (!_cameraController!.value.isInitialized) return;
@@ -102,21 +145,21 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
   Future<void> _stopVideo() async {
     try {
       if (_cameraController == null) return;
-
       if (!_cameraController!.value.isInitialized) return;
-
-      if (!_cameraController!.value.isRecordingVideo) {
-        debugPrint("⚠️ Video already stopped, ignoring stop request");
-        return;
-      }
+      if (!_cameraController!.value.isRecordingVideo) return;
 
       _timer?.cancel();
       _timer = null;
 
       setState(() => _isRecording = false);
 
-      final XFile file =
-      await _cameraController!.stopVideoRecording();
+      final XFile xFile = await _cameraController!.stopVideoRecording();
+
+      // 🔥 FORCE NEW FILE
+      File videoFile = await copyVideoToTemp(File(xFile.path));
+
+      // 🔥 SAFE TRIM
+      videoFile = await trimVideoTo30Sec(videoFile);
 
       if (!mounted) return;
 
@@ -124,35 +167,87 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => StoryPreviewScreen(
-            file: File(file.path),
+            key: UniqueKey(),
+            file: videoFile,
             mediaType: "video",
           ),
         ),
       );
     } on CameraException catch (e) {
-      debugPrint("Camera stop error: ${e.code} | ${e.description}");
+      appLog("Camera stop error: ${e.code} | ${e.description}");
     } catch (e) {
-      debugPrint("Unexpected stop error: $e");
+      appLog("Unexpected stop error: $e");
     }
   }
 
+  // Future<void> _pickGallery() async {
+  //   final ImagePicker picker = ImagePicker();
+  //   final XFile? file = await picker.pickMedia();
+  //
+  //   if (file == null) return;
+  //
+  //   bool isVideo =
+  //       file.path.endsWith(".mp4") || file.path.endsWith(".mov");
+  //
+  //   File finalFile = File(file.path);
+  //
+  //   if (isVideo) {
+  //     finalFile = await trimVideoTo30Sec(finalFile);
+  //   }
+  //
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (_) => StoryPreviewScreen(
+  //         file: finalFile,
+  //         mediaType: isVideo ? "video" : "image",
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Future<void> _pickGallery() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? file = await picker.pickMedia();
+    final XFile? picked = await picker.pickMedia();
 
-    if (file == null) return;
+    if (picked == null) return;
 
-    bool isVideo = file.path.endsWith(".mp4") || file.path.endsWith(".mov");
+    File file = File(picked.path);
 
-    Navigator.push(
+    final String? mimeType = lookupMimeType(picked.path);
+    final bool isVideo =
+        mimeType?.startsWith('video/') == true ||
+            picked.path.toLowerCase().endsWith('.mp4') ||
+            picked.path.toLowerCase().endsWith('.mov');
+
+    if (isVideo) {
+      // 🔥 STEP 1: force new file
+      file = await forceNewVideoFile(file);
+
+      // 🔥 STEP 2: trim safely
+      file = await trimVideoTo30Sec(file);
+
+      // 🔥 STEP 3: force AGAIN (important)
+      file = await forceNewVideoFile(file);
+    }
+
+    if (!mounted) return;
+
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => StoryPreviewScreen(
-          file: File(file.path),
+          file: file,
           mediaType: isVideo ? "video" : "image",
         ),
       ),
     );
+  }
+  Future<File> forceNewVideoFile(File original) async {
+    final dir = await Directory.systemTemp.createTemp('story_video_final_');
+    final newPath =
+        '${dir.path}/${DateTime.now().microsecondsSinceEpoch}.mp4';
+    return original.copy(newPath);
   }
 
   @override
@@ -281,27 +376,66 @@ class StoryPreviewScreen extends StatefulWidget {
   State<StoryPreviewScreen> createState() => _StoryPreviewScreenState();
 }
 
-class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
+class _StoryPreviewScreenState extends State<StoryPreviewScreen>
+    with RouteAware {
+
   VideoPlayerController? vc;
 
   @override
   void initState() {
     super.initState();
-    if (widget.mediaType == "video") {
-      vc = VideoPlayerController.file(widget.file)
-        ..initialize().then((_) {
-          setState(() {});
-          vc!.play();
-          vc!.setLooping(true);
-        });
+    _initVideo();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      routeObserver.subscribe(this, route);
     }
   }
 
   @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     vc?.pause();
     vc?.dispose();
-    vc = null;    super.dispose();
+    vc = null;
+    super.dispose();
+  }
+
+
+  // 🔥 WHEN A NEW SCREEN OPENS (Details screen)
+  @override
+  void didPushNext() {
+    vc?.pause(); // ✅ DO NOT DISPOSE
+  }
+
+
+  void _initVideo() async {
+    if (widget.mediaType != "video") return;
+
+    // 🔥 ensure old texture is fully gone
+    await Future.delayed(const Duration(milliseconds: 50));
+
+    vc = VideoPlayerController.file(widget.file);
+
+    await vc!.initialize();
+
+    if (!mounted) return;
+
+    vc!
+      ..setLooping(true)
+      ..play();
+
+    setState(() {});
+  }
+
+  void _disposeVideo() {
+    vc?.pause();
+    vc?.dispose();
+    vc = null;
   }
 
   @override
@@ -321,7 +455,8 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                   mediaType: widget.mediaType,
                 ),
               ),
-            );          }, child: Text("Next",style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold,fontSize: 16),)),SizedBox(width: 16,)
+            );          }, child: Text(  context.watch<TranslateProvider>().t('txt_next'),
+        style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold,fontSize: 16),)),SizedBox(width: 16,)
 
         ],
       ),
@@ -343,7 +478,7 @@ class _StoryPreviewScreenState extends State<StoryPreviewScreen> {
                         child: VideoPlayer(vc!),
                       ),
                     )
-                  : const Center(child: CircularProgressIndicator()),
+                  : const Center(child: CircularProgressIndicator(color: Colors.red,)),
             ),
 
 
@@ -440,8 +575,8 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        title: const Text(
-          "Story Details",
+        title:  Text(
+          context.watch<TranslateProvider>().t('txt_story_details'),
           style: TextStyle(color: Colors.black),
         ),
         iconTheme: const IconThemeData(color: Colors.black),
@@ -475,30 +610,54 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
             ),
 
             const SizedBox(height: 20),
-            _LocationField(
-              key: _fromFieldKey,
-              label: context.watch<TranslateProvider>().t('txt_leaving_from'),
+            // _LocationField(
+            //   key: _fromFieldKey,
+            //   label: context.watch<TranslateProvider>().t('txt_where'),
+            //   controller: _fromController,
+            //   options: _cityNames,
+            //   icon: "assets/images/red_icon.svg",
+            //   cs: cs,
+            // ),
+            TextField(
+              // focusNode: _focusNode,
               controller: _fromController,
-              options: _cityNames,
-              icon: "assets/images/red_icon.svg",
-              cs: cs,
+              decoration: InputDecoration(
+                labelText: context.watch<TranslateProvider>().t('txt_where'),
+                prefixIconConstraints: const BoxConstraints(minWidth: 40),
+                prefixIcon: Container(
+                  margin: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(6),
+                  child: SvgPicture.asset("assets/images/red_icon.svg", height: 20),
+                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                filled: true,
+                // fillColor: Theme.of(context).colorScheme,
+              ),
+              // onTap: () {
+              //   _focusNode.requestFocus();
+              //   Future.delayed(const Duration(microseconds: 800), () {
+              //     if (_filteredOptions.isNotEmpty && _focusNode.hasFocus) {
+              //       _showOverlay();
+              //     }
+              //   });
+              // },
             ),
-            const SizedBox(height: 16),
-            _LocationField(
-              key: _toFieldKey,
-              label: context.watch<TranslateProvider>().t('txt_going_to'),
-              controller: _toController,
-              options: _cityNames,
-              icon: "assets/images/blue_icon.svg",
-              cs: cs,
-            ),
+            // const SizedBox(height: 16),
+            // _LocationField(
+            //   key: _toFieldKey,
+            //   label: context.watch<TranslateProvider>().t('txt_going_to'),
+            //   controller: _toController,
+            //   options: _cityNames,
+            //   icon: "assets/images/blue_icon.svg",
+            //   cs: cs,
+            // ),
 
 
             const SizedBox(height: 20),
 
             /// DESCRIPTION FIELD
-            const Text(
-              "Description",
+             Text(
+              context.watch<TranslateProvider>().t('txt_description'),
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
@@ -506,7 +665,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
               controller: desc,
               maxLines: 4,
               decoration: InputDecoration(
-                hintText: "Describe what happened...",
+                hintText: context.watch<TranslateProvider>().t('txt_description_hint'),
                 filled: true,
                 fillColor: Colors.white,
                 contentPadding:
@@ -520,8 +679,8 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
             const SizedBox(height: 20),
 
             /// CATEGORY DROPDOWN
-            const Text(
-              "Category",
+             Text(
+              context.watch<TranslateProvider>().t('txt_category'),
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
@@ -534,16 +693,25 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
               child: DropdownButtonFormField(
                 value: category,
                 decoration: const InputDecoration(border: InputBorder.none),
-                items: const [
+                items: [
                   DropdownMenuItem(
-                      value: "Weather", child: Text("☁️ Weather")),
+                    value: "Weather",
+                    child: Text(context.watch<TranslateProvider>().t('txt_weather')),
+                  ),
                   DropdownMenuItem(
-                      value: "Accident", child: Text("🚧 Accident")),
+                    value: "Accident",
+                    child: Text(context.watch<TranslateProvider>().t('txt_accident')),
+                  ),
                   DropdownMenuItem(
-                      value: "Repair", child: Text("🛠 Road Repair")),
+                    value: "Repair",
+                    child: Text(context.watch<TranslateProvider>().t('txt_road_repair')),
+                  ),
                   DropdownMenuItem(
-                      value: "Traffic", child: Text("🚗 Traffic")),
+                    value: "Traffic",
+                    child: Text(context.watch<TranslateProvider>().t('txt_traffic')),
+                  ),
                 ],
+
                 onChanged: (v) => setState(() => category = v!),
               ),
             ),
@@ -566,61 +734,101 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
           onPressed: posting
               ? null
               : () async {
-            if (_fromController.text.isEmpty ||
-                _toController.text.isEmpty ||
-                desc.text.isEmpty) {
+            // ================= VALIDATION =================
+
+
+            setState(() {
+              posting = true;
+              uploadProgress = 0;
+            });
+
+            try {
+              final token = await LocalCache.getToken();
+              if (token == null) {
+                throw Exception("User not authenticated");
+              }
+
+              final route =
+                  "${_fromController.text.trim()} - ${_toController.text.trim()}";
+              final city = _toController.text.trim();
+
+              bool success = false;
+
+              // ==================================================
+              // 🖼 IMAGE FLOW (NO CHUNKS)
+              // ==================================================
+              if (widget.mediaType == "image") {
+                // Normalize image
+                final File compressedImage =
+                await StoryRepo.instance.compressImage720(widget.file);
+
+                success = await StoryRepo.uploadImageNormal(
+                  token: token,
+                  file: compressedImage,
+                  route: route,
+                  city: city,
+                  description: desc.text.trim(),
+                  category: category,
+                );
+              }
+
+              // ==================================================
+              // 🎥 VIDEO FLOW (CHUNKED)
+              // ==================================================
+              else {
+                File videoFile =
+                await StoryRepo.instance.ensureMp4File(widget.file);
+                videoFile =
+                await StoryRepo.instance.compressVideo720(videoFile);
+
+                success = await StoryRepo.uploadStoryInChunks(
+                  token: token,
+                  file: videoFile,
+                  mediaType: "video",
+                  route: route,
+                  city: city,
+                  description: desc.text.trim(),
+                  category: category,
+                  onProgress: (progress) {
+                    setState(() {
+                      uploadProgress = progress;
+                    });
+                  },
+                );
+              }
+
+              setState(() => posting = false);
+
+              // ================= RESULT =================
+              if (success) {
+                Navigator.popUntil(context, (route) => route.isFirst);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                   SnackBar(
+                    content: Text(    context.watch<TranslateProvider>().t('txt_story_published'),
+                    ),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                   SnackBar(
+                    content: Text(    context.watch<TranslateProvider>().t('txt_story_publish_failed'),
+                    ),
+                  ),
+                );
+              }
+            } catch (e) {
+              setState(() => posting = false);
+
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Please fill all fields")),
-              );
-              return;
-            }
-
-            setState(() => posting = true);
-
-            final token = await LocalCache.getToken(); // your existing method
-            File uploadFile;
-
-            if (widget.mediaType == "image") {
-              uploadFile =
-              await StoryRepo.instance.compressImage720(widget.file);
-            } else {
-              uploadFile =
-              await StoryRepo.instance.ensureMp4File(widget.file);
-              uploadFile =
-              await StoryRepo.instance.compressVideo720(uploadFile);
-            }
-            final success = await StoryRepo.uploadStoryInChunks(
-              token: token!,
-              file: uploadFile,
-              mediaType: widget.mediaType,
-              route:
-              "${_fromController.text.trim()} - ${_toController.text.trim()}",
-              city: _toController.text.trim(),
-              description: desc.text.trim(),
-              category: category,
-              onProgress: (progress) {
-                setState(() {
-                  uploadProgress = progress;
-                });
-              },
-            );
-
-
-            setState(() => posting = false);
-
-            if (success) {
-
-              Navigator.popUntil(context, (route) => route.isFirst);
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Story published successfully")),
-              );
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Failed to publish story")),
+                SnackBar(
+                  content: Text(    "${context.watch<TranslateProvider>().t('txt_upload_error')}: $e",
+                  ),
+                ),
               );
             }
           },
+
 
           child:  posting
               ? Column(
@@ -635,7 +843,7 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                "Uploading... ${uploadProgress.toStringAsFixed(0)}%",
+                "${context.watch<TranslateProvider>().t('txt_uploading')} ${uploadProgress.toStringAsFixed(0)}%",
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
@@ -644,8 +852,8 @@ class _StoryDetailsScreenState extends State<StoryDetailsScreen> {
               ),
             ],
           )
-              : const Text(
-            "Publish Story",
+              :  Text(
+            context.watch<TranslateProvider>().t('txt_publish_story'),
             style: TextStyle(fontSize: 18, color: Colors.white),
           ),
 
@@ -809,3 +1017,5 @@ class _LocationFieldState extends State<_LocationField> {
     super.dispose();
   }
 }
+
+

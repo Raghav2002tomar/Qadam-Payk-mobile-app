@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:bla_bla_car/api_service/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -96,7 +97,7 @@ class Api_Service {
         ...body,
       };
 
-      print("Form Body BEFORE POST: $formBody");
+      appLog("Form Body BEFORE POST: $formBody");
 
       // Step 3: POST as x-www-form-urlencoded
       final response = await http.post(
@@ -107,8 +108,8 @@ class Api_Service {
         body: formBody,
       );
 
-      print("Response status code: ${response.statusCode}");
-      print("Response body: ${response.body}");
+      appLog("Response status code: ${response.statusCode}");
+      appLog("Response body: ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);
@@ -117,7 +118,7 @@ class Api_Service {
             "Server Error: ${response.statusCode} - ${response.reasonPhrase}");
       }
     } catch (e) {
-      print("Error in postWithCsrfTokenForm: $e");
+      appLog("Error in postWithCsrfTokenForm: $e");
       throw Exception("Unexpected error: $e");
     }
   }
@@ -156,8 +157,8 @@ class Api_Service {
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
-      print("Multipart Response status: ${response.statusCode}");
-      print("Multipart Response body: ${response.body}");
+      appLog("Multipart Response status: ${response.statusCode}");
+      appLog("Multipart Response body: ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);
@@ -166,7 +167,7 @@ class Api_Service {
             "Server Error: ${response.statusCode} - ${response.reasonPhrase}");
       }
     } catch (e) {
-      print("Error in postWithCsrfTokenMultipart: $e");
+      appLog("Error in postWithCsrfTokenMultipart: $e");
       throw Exception("Unexpected error: $e");
     }
   }

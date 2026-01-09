@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../../../api_service/app_constocter.dart';
+import '../../../api_service/logger.dart';
 import '../../../models/UserProfileModel.dart';
 import '../../../providers/translate_provider.dart';
 import '../../../service/colors.dart';
@@ -130,7 +131,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       }
     } catch (e) {
       setState(() => _isLoading = false);
-      debugPrint("Error loading profile: $e");
+      appLog("Error loading profile: $e");
     } finally {
       loginProvider.setLoading(false);
     }

@@ -4,6 +4,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:http/http.dart' as http;
 import 'package:dotted_line/dotted_line.dart';
 import 'package:provider/provider.dart';
+import '../../../api_service/logger.dart';
 import '../../../providers/translate_provider.dart';
 import '../../../service/local_cache.dart';
 import '../../../service/colors.dart';
@@ -55,7 +56,7 @@ class _MyTripsScreenState extends State<MyTripsScreen> with SingleTickerProvider
       };
 
       final res = await http.get(Uri.parse(baseUrl), headers: headers);
-      print("📦 [$statusType] Response: ${res.body}");
+      appLog("📦 [$statusType] Response: ${res.body}");
 
       if (res.statusCode == 200) {
         final jsonData = jsonDecode(res.body);
@@ -71,10 +72,10 @@ class _MyTripsScreenState extends State<MyTripsScreen> with SingleTickerProvider
         }
       } else {
         setState(() => loading = false);
-        print("⚠️ Failed to fetch $statusType rides: ${res.statusCode}");
+        appLog("⚠️ Failed to fetch $statusType rides: ${res.statusCode}");
       }
     } catch (e, s) {
-      print("⚠️ Error fetching $statusType rides: $e\n$s");
+      appLog("⚠️ Error fetching $statusType rides: $e\n$s");
       setState(() => loading = false);
     }
   }
@@ -114,8 +115,8 @@ class _MyTripsScreenState extends State<MyTripsScreen> with SingleTickerProvider
 
       if (mounted) Navigator.of(context).pop();
 
-      debugPrint("📤 Review Response Status: ${response.statusCode}");
-      debugPrint("📥 Review Response Body: ${response.body}");
+      appLog("📤 Review Response Status: ${response.statusCode}");
+      appLog("📥 Review Response Body: ${response.body}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
@@ -149,7 +150,7 @@ class _MyTripsScreenState extends State<MyTripsScreen> with SingleTickerProvider
     } catch (e) {
       if (mounted) Navigator.of(context).pop();
 
-      debugPrint("❌ Review Exception: $e");
+      appLog("❌ Review Exception: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

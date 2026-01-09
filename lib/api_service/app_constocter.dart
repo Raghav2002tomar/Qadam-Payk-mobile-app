@@ -1,6 +1,6 @@
 class App_Constructor {
   final BaseURL = "https://qadampayk.com";
-  final istestmode = true;
+  final istestmode = false;
 
 
   //auth

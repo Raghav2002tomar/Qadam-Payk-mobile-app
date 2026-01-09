@@ -10,6 +10,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../service/local_cache.dart';
+import 'api_service/logger.dart';
 import 'main.dart'; // 👈 Import your LocalCache
 
 // class NotificationHandler {
@@ -46,32 +47,32 @@ import 'main.dart'; // 👈 Import your LocalCache
 //
 //     // 🔄 Listen for token refresh events (when FCM rotates token)
 //     FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
-//       debugPrint("♻️ FCM Token refreshed: $newToken");
+//       appLog("♻️ FCM Token refreshed: $newToken");
 //       await LocalCache.saveFcmToken(newToken);
 //       // await _sendTokenToBackend(newToken);
 //     });
 //
 //     // 📩 Foreground messages
 //     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-//       debugPrint("----------- 🔥 FULL FCM MESSAGE (FOREGROUND) ------------");
-//       debugPrint("ID: ${message.messageId}");
-//       debugPrint("Title: ${message.notification?.title}");
-//       debugPrint("Body: ${message.notification?.body}");
-//       debugPrint("Data: ${message.data}");
-//       debugPrint("Sender ID: ${message.senderId}");
-//       debugPrint("Collapse Key: ${message.collapseKey}");
-//       debugPrint("Category: ${message.category}");
-//       debugPrint("Thread ID: ${message.threadId}");
-//       debugPrint("---------------------------------------------------------");
+//       appLog("----------- 🔥 FULL FCM MESSAGE (FOREGROUND) ------------");
+//       appLog("ID: ${message.messageId}");
+//       appLog("Title: ${message.notification?.title}");
+//       appLog("Body: ${message.notification?.body}");
+//       appLog("Data: ${message.data}");
+//       appLog("Sender ID: ${message.senderId}");
+//       appLog("Collapse Key: ${message.collapseKey}");
+//       appLog("Category: ${message.category}");
+//       appLog("Thread ID: ${message.threadId}");
+//       appLog("---------------------------------------------------------");
 //       _showLocalNotification(message);
 //     });
 //
 //     // 📲 When notification is tapped (app in background)
 //     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) async {
-//       debugPrint("----------- 🚀 OPENED FROM NOTIFICATION ------------");
-//       debugPrint("Route: ${message.data['route']}");
-//       debugPrint("Full Data: ${message.data}");
-//       debugPrint("----------------------------------------------------");
+//       appLog("----------- 🚀 OPENED FROM NOTIFICATION ------------");
+//       appLog("Route: ${message.data['route']}");
+//       appLog("Full Data: ${message.data}");
+//       appLog("----------------------------------------------------");
 //       // _handleNotificationClick(context, message.data['route']);
 //       RemoteMessage? initialMessage = await FirebaseMessaging.instance
 //           .getInitialMessage();
@@ -79,7 +80,7 @@ import 'main.dart'; // 👈 Import your LocalCache
 //         _openInterestedPassenger(context, initialMessage.data);
 //       }
 //       Future.delayed(const Duration(seconds: 2), () {
-//         print('One second has passed.'); // Prints after 1 second.
+//         appLog('One second has passed.'); // Prints after 1 second.
 //         _openInterestedPassenger(context, message.data);
 //       });
 //     });
@@ -88,7 +89,7 @@ import 'main.dart'; // 👈 Import your LocalCache
 //     RemoteMessage? initialMessage = await FirebaseMessaging.instance
 //         .getInitialMessage();
 //     if (initialMessage != null) {
-//       debugPrint("🚀 App launched by tapping notification (COLD START)");
+//       appLog("🚀 App launched by tapping notification (COLD START)");
 //       WidgetsBinding.instance.addPostFrameCallback((_) {
 //         _openInterestedPassenger(context, initialMessage.data);
 //       });
@@ -104,8 +105,8 @@ import 'main.dart'; // 👈 Import your LocalCache
 //     final title = data['body']?.toString() ?? "";
 //     final body = data['title']?.toString() ?? "";
 //
-//     debugPrint("🔔 Notification Type: $type");
-//     debugPrint("📦 Data: $data");
+//     appLog("🔔 Notification Type: $type");
+//     appLog("📦 Data: $data");
 //
 //     if (type == "4") {
 //       // → Go to Response screen
@@ -136,9 +137,9 @@ import 'main.dart'; // 👈 Import your LocalCache
 //       final title = data['title']?.toString() ?? "";
 //       final body  = data['body']?.toString() ?? "";
 //
-//       debugPrint("📰 FINAL TITLE: $title");
-//       debugPrint("📰 FINAL BODY: $body");
-//       debugPrint("📰 FINAL TYPE: $type");
+//       appLog("📰 FINAL TITLE: $title");
+//       appLog("📰 FINAL BODY: $body");
+//       appLog("📰 FINAL TYPE: $type");
 //
 //       navigatorKey.currentState?.push(
 //         MaterialPageRoute(
@@ -160,7 +161,7 @@ import 'main.dart'; // 👈 Import your LocalCache
 //   Future<void> _fetchAndSaveFcmToken() async {
 //     String? token = await _firebaseMessaging.getToken();
 //     if (token != null) {
-//       debugPrint("🔑 FCM Token: $token");
+//       appLog("🔑 FCM Token: $token");
 //       await LocalCache.saveFcmToken(token);
 //       // await _sendTokenToBackend(token);
 //     }
@@ -204,12 +205,12 @@ import 'main.dart'; // 👈 Import your LocalCache
 //
 // // Background message handler must be a top-level function
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint("----------- 🌙 FULL FCM MESSAGE (BACKGROUND) ------------");
-  debugPrint("ID: ${message.messageId}");
-  debugPrint("Title: ${message.notification?.title}");
-  debugPrint("Body: ${message.notification?.body}");
-  debugPrint("Data: ${message.data}");
-  debugPrint("---------------------------------------------------------");
+  appLog("----------- 🌙 FULL FCM MESSAGE (BACKGROUND) ------------");
+  appLog("ID: ${message.messageId}");
+  appLog("Title: ${message.notification?.title}");
+  appLog("Body: ${message.notification?.body}");
+  appLog("Data: ${message.data}");
+  appLog("---------------------------------------------------------");
 }
 
 class NotificationHandler {
@@ -258,7 +259,7 @@ class NotificationHandler {
       if (_notificationHandled) return;
       _notificationHandled = true;
 
-      debugPrint("🚀 OPENED FROM BACKGROUND");
+      appLog("🚀 OPENED FROM BACKGROUND");
       _openInterestedPassenger(message.data);
     });
 
@@ -279,8 +280,8 @@ class NotificationHandler {
   void _openInterestedPassenger(Map<String, dynamic> data) {
     final type = data['notification_type']?.toString() ?? "";
 
-    debugPrint("🔔 TYPE: $type");
-    debugPrint("📦 DATA: $data");
+    appLog("🔔 TYPE: $type");
+    appLog("📦 DATA: $data");
 
     if (type == "4") {
       navigatorKey.currentState?.push(

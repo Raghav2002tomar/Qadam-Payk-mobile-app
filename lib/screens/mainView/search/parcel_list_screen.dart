@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 
+import '../../../api_service/logger.dart';
 import '../../../service/colors.dart';
 import '../../../service/local_cache.dart';
 import '../../auth/SignInScreen.dart';
@@ -138,7 +139,7 @@ class _ParcelListScreenState extends State<ParcelListScreen>
             return DriverParcelCard(
               trip: trip,
               onTap: () {
-                print( widget.parcelData['passengers']);
+                appLog( widget.parcelData['passengers']);
                   // Navigator.push(
                   //   context,
                   //   MaterialPageRoute(
@@ -302,7 +303,7 @@ class SenderParcelCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final imageUrl = request.image != null
         ? "https://qadampayk.com/assets/profile_image/${request.image}"
-        : "https://images.unsplash.com/photo-1595152772835-219674b2a8a6";
+        : "https://img.freepik.com/premium-vector/vector-flat-illustration-grayscale-avatar-user-profile-person-icon-gender-neutral-silhouette-profile-picture-suitable-social-media-profiles-icons-screensavers-as-templatex9xa_719432-2210.jpg?semt=ais_hybrid&w=740&q=80";
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -353,7 +354,7 @@ class _DriverInfo extends StatelessWidget {
               CircleAvatar(
                 radius: 28,
                 backgroundImage: NetworkImage(
-                    "https://qadampayk.com/assets/profile_image/${trip.driverImage}" ?? "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDI0LTAxL3Jhd3BpeGVsb2ZmaWNlMTFfcGhvdG9fb2ZfYWZyaWNhbl9hbWVyaWNhbl9tYW5faW5fYnVzaW5lc3Nfc3VpdF9iYmEzZjA3MS1iN2JkLTQ3MjctODA4MC1hYjJmOTIxOGY1OTMucG5n.png",
+                    "https://qadampayk.com/assets/profile_image/${trip.driverImage}" ?? "https://img.freepik.com/premium-vector/vector-flat-illustration-grayscale-avatar-user-profile-person-icon-gender-neutral-silhouette-profile-picture-suitable-social-media-profiles-icons-screensavers-as-templatex9xa_719432-2210.jpg?semt=ais_hybrid&w=740&q=80",
                 ),
               ),
               const SizedBox(width: 12),
@@ -362,7 +363,7 @@ class _DriverInfo extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                trip.driverName ?? "Driver Name",
+                trip.driverName ?? "Driver",
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
@@ -389,7 +390,7 @@ class _DriverInfo extends StatelessWidget {
                 children: [
 
                   InkWell(onTap: ()async {
-                    print(trip.driverId);
+                    appLog(trip.driverId);
 
                     final token = await LocalCache.getToken();
                     if (token == null || token.isEmpty) {
