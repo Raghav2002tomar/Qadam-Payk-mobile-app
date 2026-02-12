@@ -15,6 +15,7 @@ import '../../../providers/translate_provider.dart';
 import '../../../service/colors.dart';
 import '../../../service/local_cache.dart';
 import '../../auth/controller/auth_provider.dart';
+import '../../courier/create_courier_screen.dart';
 import '../../notification/screens/NotificationScreen.dart';
 import 'EditProfileScreen.dart';
 import 'PrivacyPolicyScreen.dart';
@@ -510,6 +511,18 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const NotificationScreen()),
+              );
+            },
+          ),
+          _buildDivider(),
+          _buildModernTile(
+            Icons.privacy_tip_outlined,
+            context.watch<TranslateProvider>().t('Create Courier'),
+            context.watch<TranslateProvider>().t('txt_view_term_and_conditions'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CreateCourierScreen()),
               );
             },
           ),

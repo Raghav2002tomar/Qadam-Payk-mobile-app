@@ -88,7 +88,7 @@ class MyApp extends StatelessWidget {
       title: 'ShopEase Professional',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
+      // darkTheme: AppTheme.dark(),
       themeMode: mode,
       locale: Locale(locale),
       navigatorObservers: [routeObserver],
