@@ -24,6 +24,15 @@ class UserProfile {
   final String? otpSentAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  // new
+  final bool isOnline;
+  final String? courierDocStatus;
+  final String? courierRejectReason;
+  final bool isBlocked;
+  final bool isDeleted;
+  final String? passportImages;
+  final String? licenseImages;
+  final String? courierSelfie;
 
   UserProfile({
     required this.id,
@@ -51,6 +60,14 @@ class UserProfile {
     this.otpSentAt,
     this.createdAt,
     this.updatedAt,
+    required this.isOnline,
+    this.courierDocStatus,
+    this.courierRejectReason,
+    required this.isBlocked,
+    required this.isDeleted,
+    this.passportImages,
+    this.licenseImages,
+    this.courierSelfie,
   });
 
   // ✅ fromJson factory constructor
@@ -85,6 +102,14 @@ class UserProfile {
       updatedAt: json['updated_at'] != null
           ? DateTime.tryParse(json['updated_at'])
           : null,
+      isOnline: json['is_online'] == 1,
+      courierDocStatus: json['courier_doc_status'],
+      courierRejectReason: json['courier_reject_reason'],
+      isBlocked: json['is_blocked'] == 1,
+      isDeleted: json['is_deleted'] == 1,
+      passportImages: json['passport_images'],
+      licenseImages: json['license_images'],
+      courierSelfie: json['courier_selfie'],
     );
   }
 
@@ -115,6 +140,14 @@ class UserProfile {
     String? otpSentAt,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isOnline,
+    String? courierDocStatus,
+    String? courierRejectReason,
+    bool? isBlocked,
+    bool? isDeleted,
+    String? passportImages,
+    String? licenseImages,
+    String? courierSelfie,
   }) {
     return UserProfile(
       id: id ?? this.id,
@@ -142,6 +175,14 @@ class UserProfile {
       otpSentAt: otpSentAt ?? this.otpSentAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isOnline: isOnline ?? this.isOnline,
+      courierDocStatus: courierDocStatus ?? this.courierDocStatus,
+      courierRejectReason: courierRejectReason ?? this.courierRejectReason,
+      isBlocked: isBlocked ?? this.isBlocked,
+      isDeleted: isDeleted ?? this.isDeleted,
+      passportImages: passportImages ?? this.passportImages,
+      licenseImages: licenseImages ?? this.licenseImages,
+      courierSelfie: courierSelfie ?? this.courierSelfie,
     );
   }
 }

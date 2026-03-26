@@ -23,17 +23,17 @@ import 'DriverProfileScreen.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final RideDataModel ride;
-  final int passengers;
+  final int? passengers;
   final List<String>? services;
-  final String bookingType; // 0 = Ride, 1 = Parcel
+  final String? bookingType; // 0 = Ride, 1 = Parcel
 
 
   const OrderDetailScreen({
     super.key,
     required this.ride,
-    required this.passengers,
+     this.passengers,
     this.services,
-    required this.bookingType, // default to Ride if not provided
+     this.bookingType, // default to Ride if not provided
 
   });
 

@@ -87,7 +87,7 @@ android {
 
     defaultConfig {
         applicationId = "com.qadam_payk"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName

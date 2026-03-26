@@ -2,7 +2,7 @@ import 'package:hive/hive.dart';
 
 
 class Vehicle {
-  String? id;
+  dynamic? id;
   String? brand;
   String? model;
   String? plate;
@@ -12,8 +12,9 @@ class Vehicle {
 
   factory Vehicle.fromJson(Map<String, dynamic> json) {
     return Vehicle(
-      id: json['id']?.toString(),
-      brand: json['brand'],
+      id: json['id'] is String
+          ? int.parse(json['id'])
+          : json['id'],      brand: json['brand'],
       model: json['model'],
       plate: json['number_plate'],
       imagePath: json['vehicle_image'], // depends on API response key

@@ -15,6 +15,7 @@ import '../../../models/UserProfileModel.dart';
 import '../../../service/local_cache.dart';
 import '../../auth/SignInScreen.dart';
 import '../../auth/controller/auth_provider.dart';
+import '../../courier/courier_verification_doc_Screen.dart';
 import '../create/Add_vehical.dart';
 
 class ProfileManagementScreen extends StatefulWidget {
@@ -487,9 +488,13 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
                     children: [
                       _buildPersonalInfoCard(),
                       const SizedBox(height: 20),
-                      _buildStatsCard(),
+                      _buildCourierCard(),
                       const SizedBox(height: 20),
+
                       _buildQuickActionsCard(),
+
+                      const SizedBox(height: 20),
+                      _buildStatsCard(),
                       const SizedBox(height: 20),
                       if (_isEditing) _buildSaveButton(),
                       if (_isEditing) const SizedBox(height: 20),
@@ -804,6 +809,98 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
     );
   }
 
+  Widget _buildCourierCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF008955).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.directions_bike_outlined,
+                  color: Color(0xFF008955),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                // context.watch<TranslateProvider>().t('txt_your_stats'),
+                "Courier Verification",
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1A1A1A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildActionTile(
+            icon: Icons.newspaper_outlined,
+            // title: context.watch<TranslateProvider>().t('txt_add_vehicle'),
+            // subtitle: context.watch<TranslateProvider>().t(
+            //   'txt_register_your_vehicle',
+            // ),
+            title: "Add Documents",
+            subtitle: context.watch<TranslateProvider>().t(
+              'txt_register_your_vehicle',
+            ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => CourierVerificationDocScreen()),
+              );
+            },
+          ),
+          // Row(
+          //   children: [
+          //     Expanded(
+          //       child: _buildStatItem(
+          //         context.watch<TranslateProvider>().t('txt_tips'),
+          //         "0",
+          //         Icons.stars,
+          //       ),
+          //     ),
+          //     Expanded(
+          //       child: _buildStatItem(
+          //         context.watch<TranslateProvider>().t('txt_rides'),
+          //         "0",
+          //         Icons.directions_car,
+          //       ),
+          //     ),
+          //     Expanded(
+          //       child: _buildStatItem(
+          //         context.watch<TranslateProvider>().t('txt_points'),
+          //         "0",
+          //         Icons.loyalty,
+          //       ),
+          //     ),
+          //   ],
+          // ),
+        ],
+      ),
+    );
+  }
+
+
   Widget _buildStatsCard() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -837,7 +934,8 @@ class _ProfileManagementScreenState extends State<ProfileManagementScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                context.watch<TranslateProvider>().t('txt_your_stats'),
+                // context.watch<TranslateProvider>().t('txt_your_stats'),
+                "Courier Verification",
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,

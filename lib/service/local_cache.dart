@@ -1,3 +1,4 @@
+import 'package:hive/hive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class LocalCache {
@@ -5,6 +6,32 @@ class LocalCache {
   static const String _loginKey = "user_logged_in";
   static const String _tokenKey = "api_token";
   static const String _fcmTokenKey = "fcm_token";
+  static const String _drivermodeKey = "is_driver_mode";
+  static const String _driverModeKey = "driver_mode";
+
+  static Future<void> setDriverMode(bool value) async {
+    final box = await Hive.openBox('appBox');
+    await box.put(_driverModeKey, value);
+  }
+
+  static Future<bool> getDriverMode() async {
+    final box = await Hive.openBox('appBox');
+    return box.get(_driverModeKey, defaultValue: false);
+  }
+
+  static Future<void> clearDriverMode() async {
+    final box = await Hive.openBox('appBox');
+    await box.delete(_driverModeKey);
+  }
+  static Future<void> saveDriverMode(bool isDriver) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_driver_mode', isDriver);
+  }
+  //
+  // static Future<bool> getDriverMode() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   return prefs.getBool('is_driver_mode') ?? false;
+  // }
 
   /// Save onboarding as completed
   static Future<void> setOnboardingSeen() async {

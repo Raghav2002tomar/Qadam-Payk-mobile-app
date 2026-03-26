@@ -5,6 +5,7 @@ import 'package:bla_bla_car/providers/product_provider.dart';
 import 'package:bla_bla_car/providers/theme_provider.dart';
 import 'package:bla_bla_car/providers/translate_provider.dart' show TranslateProvider;
 import 'package:bla_bla_car/screens/auth/controller/auth_provider.dart' show LoginProvider;
+import 'package:bla_bla_car/screens/courier/driver_home_shell.dart';
 import 'package:bla_bla_car/screens/mainView/HomeShell.dart';
 import 'package:bla_bla_car/screens/mainView/create/cantroller/passenger_request_provider.dart';
 import 'package:bla_bla_car/screens/mainView/provide/ChatProvider.dart';
@@ -51,6 +52,8 @@ void main() async {
 
   PaintingBinding.instance.imageCache.maximumSize = 200;
   PaintingBinding.instance.imageCache.maximumSizeBytes = 200 << 20; // 200MB
+  await NotificationHandler().init();
+
   runApp(
     MultiProvider(
       providers: [
@@ -64,36 +67,88 @@ void main() async {
         ChangeNotifierProvider(create: (_) => RideListProvide()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
       ],
-      child: MyApp(seenOnboarding: seenOnboarding),
+      child: MyApp(),
     ),
   );
 }
 
-class MyApp extends StatelessWidget {
-  final bool seenOnboarding;
-  const MyApp({super.key, required this.seenOnboarding});
+// class MyApp extends StatelessWidget {
+//   final bool seenOnboarding;
+//   const MyApp({super.key, required this.seenOnboarding});
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     bool isDriver = false;
+//     bool isLoaded = false;
+//     // Initialize notification handler after build
+//     // WidgetsBinding.instance.addPostFrameCallback((_) {
+//     //   NotificationHandler().init(context);
+//     // });
+//
+//     final mode = context.watch<ThemeProvider>().mode;
+//     final locale = context.watch<TranslateProvider>().locale;
+//
+//     return MaterialApp(
+//       navigatorKey: navigatorKey,
+//       title: 'ShopEase Professional',
+//       debugShowCheckedModeBanner: false,
+//       theme: AppTheme.light(),
+//       // darkTheme: AppTheme.dark(),
+//       themeMode: mode,
+//       locale: Locale(locale),
+//       navigatorObservers: [routeObserver],
+//       // home: seenOnboarding ? const HomeShell() : const OnboardingScreen(),
+//       // home:  HomeShell() ,
+//       home:  DriverHomeShell() ,
+//     );
+//   }
+// }
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool? isDriver;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDriverMode();
+  }
+
+  Future<void> _loadDriverMode() async {
+    final driver = await LocalCache.getDriverMode();
+    print("APP START DRIVER MODE = $driver");
+
+    if (!mounted) return;
+
+    setState(() {
+      isDriver = driver;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Initialize notification handler after build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      NotificationHandler().init(context);
-    });
-
     final mode = context.watch<ThemeProvider>().mode;
     final locale = context.watch<TranslateProvider>().locale;
 
     return MaterialApp(
       navigatorKey: navigatorKey,
-      title: 'ShopEase Professional',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
-      // darkTheme: AppTheme.dark(),
       themeMode: mode,
       locale: Locale(locale),
       navigatorObservers: [routeObserver],
-      // home: seenOnboarding ? const HomeShell() : const OnboardingScreen(),
-      home:  HomeShell() ,
+      home: isDriver == null
+          ? const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      )
+          : isDriver!
+          ? const DriverHomeShell()
+          : const HomeShell(),
     );
   }
 }

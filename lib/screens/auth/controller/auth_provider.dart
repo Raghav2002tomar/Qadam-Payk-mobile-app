@@ -125,6 +125,19 @@ class LoginProvider extends ChangeNotifier {
         await LocalCache.setUserLoggedIn(true);
         await LocalCache.saveToken(apiToken);
 
+
+        // ✅ Fetch profile
+        final profileSuccess = await fetchProfile();
+
+        if (profileSuccess && _profile != null) {
+          bool isDriverActive = _profile!.isOnline ?? false;
+
+          print("DRIVER MODE FROM API: $isDriverActive");
+
+          // ✅ Save correct driver mode
+          await LocalCache.setDriverMode(isDriverActive);
+        }
+
         // Fluttertoast.showToast(
         //   msg: response["message"] ?? "Login Successful",
         //   backgroundColor: Colors.green,
@@ -148,6 +161,26 @@ class LoginProvider extends ChangeNotifier {
     }
   }
 
+
+  Future<void> _loadProfileAndSaveDriverMode() async {
+    try {
+      final response = await apiService.getRequest(
+        endpoint: appConstructor.get_profile,
+      );
+
+      if (response["status"] == true) {
+        final profile = response["data"];
+
+        /// 👇 Change this according to your API response key
+        bool isDriverActive = profile["driver_mode"] == true;
+
+        /// ✅ Save driver mode in local storage
+        await LocalCache.setDriverMode(isDriverActive);
+      }
+    } catch (e) {
+      print("Profile fetch error: $e");
+    }
+  }
 
   Future<bool> logout(BuildContext context) async {
     setLoading(true);

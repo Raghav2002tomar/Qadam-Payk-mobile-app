@@ -1,4 +1,5 @@
 import 'package:bla_bla_car/api_service/app_constocter.dart';
+import 'package:bla_bla_car/main.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart';
@@ -6,6 +7,7 @@ import '../../../service/colors.dart';
 import '../../providers/translate_provider.dart';
 import '../../service/local_cache.dart';
 import '../../service/user_data_locatl.dart';
+import '../courier/driver_home_shell.dart';
 import '../mainView/HomeShell.dart';
 import 'controller/auth_provider.dart';
 import 'package:provider/provider.dart';
@@ -52,12 +54,27 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     final otp = otpController.text.trim();
 
     final success = await loginProvider.verifyOtp(context, widget.phoneNumber, otp);
-
+    // await Future.delayed(const Duration(milliseconds: 1000));
+print("77777777777777==========");
+    // if (success && mounted) {
+    //   Navigator.pushReplacement(
+    //     context,
+    //     MaterialPageRoute(builder: (_) => const MyApp()),
+    //         // (Route<dynamic> route) => false, // <-- This clears all previous routes
+    //   );
+    // }
     if (success && mounted) {
+      final isDriver = await LocalCache.getDriverMode();
+
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const HomeShell()),
-            (Route<dynamic> route) => false, // <-- This clears all previous routes
+        MaterialPageRoute(
+          builder: (_) =>
+          isDriver == true
+              ? const DriverHomeShell()
+              : const HomeShell(),
+        ),
+            (route) => false,
       );
     }
 
