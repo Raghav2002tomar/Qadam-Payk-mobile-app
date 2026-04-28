@@ -30,7 +30,7 @@ class _RideScreenState extends State<RideScreen> {
   bool get isEditMode => widget.ride != null;
   final _priceController = TextEditingController();
   List<String> _selectedServiceIds = [];
-
+  bool _isPermanent = false;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   int? _seats = 1;
@@ -80,7 +80,9 @@ class _RideScreenState extends State<RideScreen> {
 
     _selectedDate = _parseDate(ride['ride_date']); // ✅ FIXED
     _selectedTime = _parseTime(ride['ride_time']);
-
+    // _isPermanent =
+    //     ride['is_permanent'].toString() == "1" || ride['is_permanent'] == true;
+    _isPermanent = ride['is_permanent'] == true || ride['is_permanent'].toString() == "1";
     _seats = int.tryParse(ride['number_of_seats'].toString()) ?? 1;
     _price = double.tryParse(ride['price'].toString()) ?? 0.0;
     _priceController.text = _price.toStringAsFixed(0); // ✅ FIX
@@ -244,7 +246,53 @@ class _RideScreenState extends State<RideScreen> {
           : null,
     );
   }
-
+  Widget _permanentRideCard(ColorScheme cs) {
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.4)),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: _isPermanent
+                  ? cs.primaryContainer.withOpacity(0.2)
+                  : cs.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              Icons.repeat,
+              color: _isPermanent
+                  ? cs.onPrimaryContainer
+                  : cs.onSurfaceVariant,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              "Permanent Ride",
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+              ),
+            ),
+          ),
+          Switch(
+            value: _isPermanent,
+            onChanged: (v) => setState(() => _isPermanent = v),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            activeColor: cs.primary,
+          ),
+        ],
+      ),
+    );
+  }
   // Vehicle selection view when no vehicle is selected
   Widget _buildVehicleSelectionView(ColorScheme cs, List<Vehicle> vehicles) {
     return Center(
@@ -389,6 +437,10 @@ class _RideScreenState extends State<RideScreen> {
                 _sectionHeader(context.watch<TranslateProvider>().t('txt_packages'), Icons.local_shipping_outlined, cs),
                 const SizedBox(height: 8),
                 _packageCard(cs),
+                const SizedBox(height: 12),
+                _sectionHeader("Permanent", Icons.repeat, cs),
+                const SizedBox(height: 8),
+                _permanentRideCard(cs),
 
                 const SizedBox(height: 72),
               ]),
@@ -903,6 +955,8 @@ class _RideScreenState extends State<RideScreen> {
         vehicleId: _selectedVehicle!.id.toString(),
         extras: provider.services,
         acceptPackages: _acceptPackages,
+        isPermanent: _isPermanent,
+
       )
           : await provider.publishRide(
         departure: _departureController.text,
@@ -914,6 +968,8 @@ class _RideScreenState extends State<RideScreen> {
         vehicleId: _selectedVehicle!.id.toString(),
         extras: provider.services,
         acceptPackages: _acceptPackages,
+        isPermanent: _isPermanent,
+
       );
 
       if (!mounted) return;

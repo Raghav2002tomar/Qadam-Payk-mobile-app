@@ -48,12 +48,12 @@ class OrderDetailScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Color(0xFF008955)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          ride.rideDate != null
-              ? DateFormat(
-                  'EEEE, dd MMMM',
-                ).format(DateFormat('dd-MM-yyyy').parse(ride.rideDate!))
-              : 'Wednesday, 17 September',
+        // title: Text(ride.rideDate.toString(),
+        title:  Text(
+      ride.rideDate != null
+      ? DateFormat('EEEE, dd MMMM')
+          .format(DateTime.parse(ride.rideDate!))
+          : '',
           style: GoogleFonts.inter(
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -362,7 +362,8 @@ class OrderDetailScreen extends StatelessWidget {
                     "seats_booked": passengers, // ✅ send selected seats
                     "type": bookingType, // ✅ dynamic type
                     "services": services ?? [],
-                    "comment": ""
+                    "comment": "",
+                    "ride_date": DateFormat('dd-MM-yyyy').format(DateTime.parse(ride.rideDate.toString())),
                   };
 
                   try {

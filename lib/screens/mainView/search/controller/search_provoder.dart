@@ -323,6 +323,7 @@ class SearchProvider extends ChangeNotifier {
     required String vehicleId,
     required List<ServiceModel> extras, // your ServiceModel list
     required bool acceptPackages,
+    required bool isPermanent,
   }) async {
     try {
       final token = await LocalCache.getToken(); // your auth token
@@ -344,6 +345,7 @@ class SearchProvider extends ChangeNotifier {
         "vehicle_id": vehicleId,
         "services": selectedServiceIds,      // <-- list of strings
         "accept_parcel": acceptPackages ? "1" : "0",
+        "is_permanent": isPermanent ? "1" : "0",
       };
 
 
@@ -378,6 +380,8 @@ class SearchProvider extends ChangeNotifier {
     required String vehicleId,
     required List<ServiceModel> extras,
     required bool acceptPackages,
+    required bool isPermanent,
+
   }) async {
     try {
       final token = await LocalCache.getToken();
@@ -404,6 +408,7 @@ class SearchProvider extends ChangeNotifier {
         "vehicle_id": vehicleId,
         "services": selectedServiceIds,
         "accept_parcel": acceptPackages ? "1" : "0",
+        "is_permanent": isPermanent ? "1" : "0",
       };
 
       final response = await http.post( // or http.put if backend supports
